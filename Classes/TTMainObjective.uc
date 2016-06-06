@@ -17,8 +17,8 @@ simulated function ReachedBy(CRZPawn P)
 	NotifyPlayer(P);
 	UpdatePlayerTargets(P);
 	SetRespawnPointFor(P);
-	CheckPlayerTime(P);
-	CheckPlayerFinishedGlobal(P);
+	CheckLevelTime(P);
+	CheckFinishedGlobal(P);
 }
 
 // when we finish a MainObjective, we must set the Spawnpoint back to the last SubObjective (not keep the last Savepoint) !
@@ -27,7 +27,7 @@ simulated function SetRespawnPointFor(CRZPawn P)
 	TTPRI(P.PlayerReplicationInfo).SetSpawnPoint(TTPRI(P.PlayerReplicationInfo).LastSubObjSpawnPoint);
 }
 
-function CheckPlayerFinishedGlobal(CRZPawn P)
+function CheckFinishedGlobal(CRZPawn P)
 {
 	//TODO:
 	// check MainObj isn't already validated for player

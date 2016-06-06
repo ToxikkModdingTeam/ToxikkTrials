@@ -298,7 +298,7 @@ function bool OnKey(int ControllerId, name Key, EInputEvent EventType, optional 
     {
         if ( Key == 'Escape' && EventType == IE_Pressed )
         {
-            Show(false);
+			OnClickRoot(None, true);
             return true;
         }
 		return Root.KeyEvent(Key, EventType);

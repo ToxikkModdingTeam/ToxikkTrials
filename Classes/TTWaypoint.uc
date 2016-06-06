@@ -105,7 +105,7 @@ simulated function ReachedBy(CRZPawn P)
 
 simulated function NotifyPlayer(CRZPawn P)
 {
-	if ( PlayerController(P.Controller) != None && CRZHud(PlayerController(P.Controller).myHUD) != None )
+	if ( GetALocalPlayerController() == P.Controller && CRZHud(PlayerController(P.Controller).myHUD) != None )
 		CRZHud(PlayerController(P.Controller).myHUD).LocalizedCRZMessage(class'TTWaypointMessage', P.PlayerReplicationInfo, None, ReachString, 0, Self);
 }
 

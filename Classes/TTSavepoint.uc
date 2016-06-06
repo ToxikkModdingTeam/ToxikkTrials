@@ -28,7 +28,7 @@ simulated function ReachedBy(CRZPawn P)
 
 simulated function NotifyPlayer(CRZPawn P)
 {
-	if ( PlayerController(P.Controller) != None && CRZHud(PlayerController(P.Controller).myHUD) != None )
+	if ( GetALocalPlayerController() == P.Controller && CRZHud(PlayerController(P.Controller).myHUD) != None )
 	{
 		if ( !bAvailable && UnlockString != "" )
 			CRZHud(PlayerController(P.Controller).myHUD).LocalizedCRZMessage(class'TTWaypointMessage', P.PlayerReplicationInfo, None, UnlockString, 0, Self);
@@ -54,8 +54,7 @@ function NavigationPoint FindStartSpot(Controller Player)
 {
 	if ( Respawns.Length == 0 )
 	{
-		`Warn("[Trials] Warning - no respawn point for Savepoint " $ Name);
-		// Use self as spawn spot
+		`Warn("[Trials] WARNING - No respawn point for Savepoint " $ Name);
 		return None;
 	}
 	return Respawns[Rand(Respawns.Length)];

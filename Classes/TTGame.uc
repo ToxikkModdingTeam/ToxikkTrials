@@ -8,7 +8,7 @@
 class TTGame extends CRZGame
 	config(Trials);
 
-/** Server - holds our TR GRI */
+/** Server - holds our TT GRI */
 var TTGRI GRI;
 
 function PostBeginPlay()
@@ -99,7 +99,10 @@ function SetPlayerDefaults(Pawn PlayerPawn)
 		if ( PRI.MyCS != None )
 			PRI.MyCS.RespawnPlayer(P);
 		else
+		{
 			PRI.SpawnPoint.RespawnPlayer(P);
+			PRI.ClientSpawnedAtPoint(P, PRI.SpawnPoint);
+		}
 	}
 }
 

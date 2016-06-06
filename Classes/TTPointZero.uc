@@ -21,13 +21,8 @@ simulated function RespawnPlayer(CRZPawn P)
 	UpdatePlayerTargets(P);
 	ModifyPlayer(P);
 	SetRespawnPointFor(P);
-	ResetSubTimerFor(P);
+	ResetLevelTimerFor(P);
 	ResetGlobalTimerFor(P);
-}
-
-function ResetSubTimerFor(CRZPawn P)
-{
-	//TODO
 }
 
 function ResetGlobalTimerFor(CRZPawn P)

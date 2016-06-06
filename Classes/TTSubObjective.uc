@@ -4,7 +4,7 @@
 // - Forces path
 // - Can modify player
 // - Respawn point
-// - Sublevel delimiter for records
+// - Level delimiter for records
 // ----------------
 // by Chatouille
 //================================================================
@@ -18,10 +18,10 @@ simulated function ReachedBy(CRZPawn P)
 	UpdatePlayerTargets(P);
 	ModifyPlayer(P);
 	SetRespawnPointFor(P);
-	CheckPlayerTime(P);
+	CheckLevelTime(P);
 }
 
-function CheckPlayerTime(CRZPawn P)
+function CheckLevelTime(CRZPawn P)
 {
 	//TODO
 }
@@ -33,10 +33,10 @@ simulated function RespawnPlayer(CRZPawn P)
 	UpdatePlayerTargets(P);
 	ModifyPlayer(P);
 	SetRespawnPointFor(P);
-	ResetSubTimerFor(P);
+	ResetLevelTimerFor(P);
 }
 
-function ResetSubTimerFor(CRZPawn P)
+function ResetLevelTimerFor(CRZPawn P)
 {
 	//TODO
 }

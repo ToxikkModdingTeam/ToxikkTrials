@@ -143,7 +143,22 @@ defaultproperties
 	NetPriority=1.0
 
 	//ProjFlightTemplate=ParticleSystem'TJResources.PS_CameraProj'
+
 	ProjFlightTemplate=ParticleSystem'Laser_Beams.Effects.P_Laser_Beam'
+	ProjWaterFlightTemplate=None
+
+	ProjectileLightClass=class'Cruzade.CRZScionLaserProjectileLight'
+	ExplosionLightClass=class'Cruzade.CRZScionRifleMuzzleFlashLight'
+
+	ProjExplosionTemplate=ParticleSystem'ScionRifle.Effects.P_WP_ScionRifle_Impact'
+	ProjWaterExplosionTemplate=ParticleSystem'ScionRifle.Effects.P_WP_ScionRifle_UnderWaterImpact'
+
+	ExplosionDecal=None
+
+	AmbientSound=None
+	ExplosionSound=SoundCue'Snd_ScionRifle.SoundCues.A_Weapon_ScionRifle_ImpactCue'
+	WaterSplashSound=SoundCue'Snd_ScionRifle.SoundCues.A_Weapon_ScionRifle_Impact_WaterCue'
+
 	DecalWidth=64
 	DecalHeight=64
 	DurationOfDecal=10
