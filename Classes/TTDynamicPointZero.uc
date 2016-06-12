@@ -20,7 +20,9 @@ Replication
 simulated function Init(TTGRI GRI)
 {
 	Super.Init(GRI);
-	RepInitialPoint = InitialPoint;
+
+	if ( Role == ROLE_Authority )
+		RepInitialPoint = InitialPoint;
 }
 
 simulated event PostBeginPlay()

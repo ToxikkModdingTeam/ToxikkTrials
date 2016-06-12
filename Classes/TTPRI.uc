@@ -23,7 +23,7 @@ var bool bMustDieToClean;
 /** Client Replicated Server Replicated - Current spawn point. Initially should be PointZero */
 var TTSavepoint SpawnPoint;
 
-/** Server Replicated - Stores the last SubObj-type spawnpoint (= should be current level) */
+/** Server Replicated - Stores the current level spawn point */
 var TTLevel CurrentLevel;
 
 /** Client Replicated - Whether current spawn point is locked */
@@ -32,10 +32,10 @@ var bool bLockedSpawnPoint;
 /** Both-sided - Current target waypoint(s) */
 var array<TTWaypoint> TargetWp;
 
-/** Both-sided (though different) - start date for LEVEL timer */
+/** Both-sided (but different!) - start date for LEVEL timer */
 var int LevelStartDate;
 
-/** Both-sided (though different) - start date for GLOBAL timer */
+/** Both-sided (but different!) - start date for GLOBAL timer */
 var int GlobalStartDate;
 
 /** Both-sided - Stores all currently unlocked Savepoints for player, excluding bInitiallyAvailable ones */
@@ -162,7 +162,6 @@ function int CurrentTimeMillis()
 function SendTimerSync()
 {
 	local int Now;
-	//TODO: check timers still make sense - otherwise stop the timer
 	Now = CurrentTimeMillis();
 	ClientSyncTimers(Now-LevelStartDate, Now-GlobalStartDate);
 }

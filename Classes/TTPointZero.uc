@@ -9,7 +9,7 @@
 class TTPointZero extends TTSavepoint
 	hidecategories(Savepoint,Checkpoint,Waypoint,HUD,Trigger,Collision);
 
-/** Either a TTLevel TTSavepoint, depending on whether map starts in a sublevel or not */
+/** Either a TTLevel or a TTSavepoint, depending on whether map starts starts in a level */
 var(PointZero) TTSavepoint InitialPoint;
 
 
