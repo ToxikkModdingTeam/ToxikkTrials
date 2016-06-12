@@ -12,41 +12,41 @@ class TTSavepoint extends TTCheckpoint;
 var(Savepoint) array<PlayerStart> Respawns;
 var(Savepoint) String SpawnTreeLabel;   //TBD: should the SpawnTree have Savepoints (=midlevel) or only SubObjectives (=levelstart) ???
 
-/** Client - Whether the spawn point has been unlocked by player - map can unlock a point globally */
-var(Savepoint) bool bAvailable;
+/** Whether this point is already unlocked initially */
+var(Savepoint) bool bInitiallyAvailable;
 var(Savepoint) String UnlockString;
 
 
 /** Called by the gamemode */
 simulated function ReachedBy(CRZPawn P)
 {
+	SetRespawnPointFor(P);
 	NotifyPlayer(P);
 	UpdatePlayerTargets(P);
 	ModifyPlayer(P);
-	SetRespawnPointFor(P);
-}
-
-simulated function NotifyPlayer(CRZPawn P)
-{
-	if ( GetALocalPlayerController() == P.Controller && CRZHud(PlayerController(P.Controller).myHUD) != None )
-	{
-		if ( !bAvailable && UnlockString != "" )
-			CRZHud(PlayerController(P.Controller).myHUD).LocalizedCRZMessage(class'TTWaypointMessage', P.PlayerReplicationInfo, None, UnlockString, 0, Self);
-
-		CRZHud(PlayerController(P.Controller).myHUD).LocalizedCRZMessage(class'TTWaypointMessage', P.PlayerReplicationInfo, None, ReachString, 0, Self);
-	}
 }
 
 simulated function SetRespawnPointFor(CRZPawn P)
 {
-	TTPRI(P.PlayerReplicationInfo).SetSpawnPoint(Self);
+	local TTPRI PRI;
 
-	if ( GetALocalPlayerController() == P.Controller )
+	PRI = TTPRI(P.PlayerReplicationInfo);
+
+	// unlock spawnpoint if necessary
+	if ( !bInitiallyAvailable && PRI.UnlockedSavepoints.Find(Self) == INDEX_NONE )
 	{
-		bAvailable = true;
-		if ( TTHud(PlayerController(P.Controller).myHUD) != None )
+		PRI.UnlockedSavepoints.AddItem(Self);
+
+		if ( GetALocalPlayerController() == P.Controller && TTHud(PlayerController(P.Controller).myHUD) != None )
+		{
+			if ( UnlockString != "" )
+				CRZHud(PlayerController(P.Controller).myHUD).LocalizedCRZMessage(class'TTWaypointMessage', P.PlayerReplicationInfo, None, UnlockString, 0, Self);
+
 			TTHud(PlayerController(P.Controller).myHUD).SpawnTree.UpdateButtons();
+		}
 	}
+
+	PRI.SetSpawnPoint(Self);
 }
 
 /** Called by the gamemode */
@@ -77,8 +77,8 @@ simulated function ClearPlayerTargets(CRZPawn P)
 
 defaultproperties
 {
-	SpawnTreeLabel="Sp"
-	bAvailable=false
+	SpawnTreeLabel="S"
+	bInitiallyAvailable=false
 	UnlockString="Respawn point unlocked"
 
 	bModifyHealth=true

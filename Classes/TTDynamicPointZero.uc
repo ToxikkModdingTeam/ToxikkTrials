@@ -5,23 +5,22 @@
 // ----------------
 // by Chatouille
 //================================================================
-class TTDynamicPointZero extends TTPointZero;
+class TTDynamicPointZero extends TTPointZero
+	notplaceable;
 
-var TTWaypoint RepNextPoints[8];
+var TTSavePoint RepInitialPoint;
 
 Replication
 {
 	if ( bNetInitial )
-		RepNextPoints;
+		RepInitialPoint;
 }
 
 // this one won't be called on client
 simulated function Init(TTGRI GRI)
 {
-	local int i;
-
-	for ( i=0; i<NextPoints.Length && i<8; i++ )
-		RepNextPoints[i] = NextPoints[i];
+	Super.Init(GRI);
+	RepInitialPoint = InitialPoint;
 }
 
 simulated event PostBeginPlay()
@@ -34,11 +33,9 @@ simulated event PostBeginPlay()
 
 simulated function PostNetBeginPlay()
 {
-	local int i;
-
-	for ( i=0; i<8; i++ )
-		if ( RepNextPoints[i] != None )
-			NextPoints.AddItem(RepNextPoints[i]);
+	InitialPoint = RepInitialPoint;
+	if ( InitialPoint != None )
+		InitialPoint.bInitiallyAvailable = true;
 }
 
 defaultproperties

@@ -8,7 +8,8 @@
 //================================================================
 class TTWaypoint extends Trigger
 	placeable
-	ClassGroup(Trials);
+	ClassGroup(Trials)
+	hidecategories(Mobile);
 
 var(Waypoint) String ReachString;
 var(Waypoint) array<TTWaypoint> NextPoints;
@@ -69,6 +70,18 @@ simulated function Init(TTGRI GRI)
 
 	if ( WorldInfo.NetMode != NM_DedicatedServer )
 		SetTimer(0.1, false, 'WaitForLocalPC');
+}
+
+simulated function bool FindInPredecessors(TTWaypoint ToFind)
+{
+	local int i;
+
+	for ( i=0; i<PreviousPoints.Length; i++ )
+	{
+		if ( PreviousPoints[i] == ToFind || PreviousPoints[i].FindInPredecessors(ToFind) )
+			return true;
+	}
+	return false;
 }
 
 simulated function WaitForLocalPC()

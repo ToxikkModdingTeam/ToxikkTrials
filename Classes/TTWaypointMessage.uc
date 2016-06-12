@@ -12,7 +12,7 @@ static function SoundNodeWave AnnouncementSound(int MessageIndex, Object Optiona
     return None;
 }
 
-static function string GetCRZString(optional int Switch, optional PlayerController P, optional PlayerReplicationInfo RelatedPRI_1, optional PlayerReplicationInfo RelatedPRI_2, optional Object OptionalObject)
+static function string GetCRZString(optional int Switch, optional PlayerController PC, optional PlayerReplicationInfo RelatedPRI_1, optional PlayerReplicationInfo RelatedPRI_2, optional Object OptionalObject)
 {
 	return "";
 }

@@ -10,6 +10,9 @@ class TTGRI extends CRZGameReplicationInfo;
 /** List of all points */
 var array<TTWaypoint> AllPoints;
 
+/** Total number of objectives (all must be validated for global record) */
+var int TotalObjectives;
+
 /** Server Replicated - Reference to Point Zero */
 var TTPointZero PointZero;
 
@@ -36,17 +39,47 @@ simulated function BuildPointsList()
 {
 	local TTWaypoint Wp;
 	local int i;
+	local array<TTLevel> LevelPoints;
 
+	TotalObjectives = 0;
 	foreach WorldInfo.AllActors(class'TTWaypoint', Wp)
+	{
 		AllPoints.AddItem(Wp);
+
+		if ( Wp.IsA('TTLevel') )
+			LevelPoints.AddItem(TTLevel(Wp));
+
+		if ( Wp.IsA('TTObjective') )
+			TotalObjectives += 1;
+	}
+
+	LevelPoints.Sort(CompareLevelPoints);
+	for ( i=0; i<LevelPoints.Length; i++ )
+		LevelPoints[i].LevelIdx = i;
+
 	for ( i=0; i<AllPoints.Length; i++ )
 		AllPoints[i].Init(Self);
+}
+
+function int CompareLevelPoints(TTLevel P1, TTLevel P2)
+{
+	if ( P1.Location.X == P2.Location.X )
+	{
+		if ( P1.Location.Y == P2.Location.Y )
+		{
+			if ( P1.Location.Z == P2.Location.Z )
+				return (String(P2.Name) < String(P1.Name) ? 1 : -1);
+
+			return (P1.Location.Z < P2.Location.Z ? 1 : -1);
+		}
+		return (P1.Location.Y < P2.Location.Y ? 1 : -1);
+	}
+	return (P1.Location.X < P2.Location.Y ? 1 : -1);
 }
 
 function FindPointZero()
 {
 	local int i;
-	local PlayerStart PS;
 
 	for ( i=0; i<AllPoints.Length; i++ )
 	{
@@ -65,37 +98,18 @@ function FindPointZero()
 
 		PointZero = Spawn(class'TTDynamicPointZero');
 
-		PointZero.bModifyHealth = false;
-
-		// find some playerstarts
-		foreach WorldInfo.AllNavigationPoints(class'PlayerStart', PS)
-		{
-			if ( PS.bEnabled && PS.bPrimaryStart )
-				PointZero.Respawns.AddItem(PS);
-		}
-		if ( PointZero.Respawns.Length == 0 )
-		{
-			if ( PS != None )
-			{
-				`Log("[Trials] WARNING - No enabled primary PlayerStart found for PointZero. Adding all playerstarts...");
-				foreach WorldInfo.AllNavigationPoints(class'PlayerStart', PS)
-					PointZero.Respawns.AddItem(PS);
-			}
-			else
-				`Log("[Trials] ERROR - No PlayerStart found. Map is not playable !");
-		}
-
-		// find some Waypoints that have no predecessors...
+		// find a Savepoint with no precedessors
 		for ( i=0; i<AllPoints.Length; i++ )
 		{
-			if ( AllPoints[i].PreviousPoints.Length == 0 )
+			if ( AllPoints[i].IsA('TTSavepoint') && !AllPoints[i].IsA('TTObjective') && AllPoints[i].PreviousPoints.Length == 0 )
 			{
-				PointZero.NextPoints.AddItem(AllPoints[i]);
+				PointZero.InitialPoint = TTSavepoint(AllPoints[i]);
 				AllPoints[i].PreviousPoints.AddItem(PointZero);
+				break;
 			}
 		}
 		if ( PointZero.NextPoints.Length == 0 )
-			`Log("[Trials] ERROR - No successors found for PointZero. Map is not playable !");
+			`Log("[Trials] ERROR - No successor found for PointZero. Map is not playable !");
 
 		AllPoints.AddItem(PointZero);
 		PointZero.Init(Self);
@@ -110,7 +124,7 @@ function CheckReachability()
 	{
 		if ( AllPoints[i].PreviousPoints.Length == 0 && !AllPoints[i].IsA('TTPointZero') )
 			`Log("[Trials] WARNING - Waypoint has no predecessors : " $ AllPoints[i].Name);
-		else if ( AllPoints[i].NextPoints.Length == 0 && !AllPoints[i].IsA('TTMainObjective') )
+		else if ( AllPoints[i].NextPoints.Length == 0 && !AllPoints[i].IsA('TTObjective') )
 			`Log("[Trials] WARNING - Waypoint has no successors : " $ AllPoints[i].Name);
 	}
 }

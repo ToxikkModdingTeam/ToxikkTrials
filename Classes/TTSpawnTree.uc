@@ -100,7 +100,7 @@ function BuildTreeNodes(Canvas C, int ParentIdx, TTWaypoint Cur, int Depth, out 
 	`Log("[D] At point " $ Cur.Name);
 
 	Sp = TTSavepoint(Cur);
-	if ( Sp != None && !Sp.IsA('TTMainObjective') )
+	if ( Sp != None && !Sp.IsA('TTObjective') )
 	{
 		i = Nodes.Find('Savepoint', Sp);
 		if ( i != INDEX_NONE )
@@ -141,11 +141,16 @@ function BuildTreeNodes(Canvas C, int ParentIdx, TTWaypoint Cur, int Depth, out 
 			Nodes[i].btn.OnLeftMouse = Nodes[i].btn.LeftMousePropagate;
 		}
 
-		if ( ParentIdx != INDEX_NONE )
-			Nodes[ParentIdx].LinkTo.AddItem(i);
+		if ( ParentIdx == INDEX_NONE && Sp.IsA('TTPointZero') )
+			BuildTreeNodes(C, i, TTPointZero(Sp).InitialPoint, Depth+1, Row);
+		else
+		{
+			if ( ParentIdx != INDEX_NONE )
+				Nodes[ParentIdx].LinkTo.AddItem(i);
 
-		for ( j=0; j<Cur.NextPoints.Length; j++ )
-			BuildTreeNodes(C, i, Cur.NextPoints[j], Depth+1, Row);
+			for ( j=0; j<Cur.NextPoints.Length; j++ )
+				BuildTreeNodes(C, i, Cur.NextPoints[j], Depth+1, Row);
+		}
 	}
 	else
 	{
@@ -168,12 +173,17 @@ function UpdateButtons()
 
 	for ( i=0; i<Nodes.Length; i++ )
 	{
-		Nodes[i].btn.SetEnabled(Nodes[i].Savepoint.bAvailable);
+		Nodes[i].btn.SetEnabled(IsSavepointAvailable(Nodes[i].Savepoint));
 		if ( Nodes[i].Savepoint == PRI.SpawnPoint )
 			Nodes[i].btn.SetAutoColor(PRI.bLockedSpawnPoint ? COLOR_LOCKED : COLOR_SELECTED);
 		else
-			Nodes[i].btn.SetAutoColor(Nodes[i].Savepoint.bAvailable ? COLOR_AVAILABLE : COLOR_UNAVAILABLE);
+			Nodes[i].btn.SetAutoColor(Nodes[i].btn.bEnabled ? COLOR_AVAILABLE : COLOR_UNAVAILABLE);
 	}
+}
+
+function bool IsSavepointAvailable(TTSavepoint Sp)
+{
+	return (Sp.bInitiallyAvailable || PRI.UnlockedSavepoints.Find(Sp) != INDEX_NONE);
 }
 
 function OnClickRoot(GUIGroup elem, bool bDown)
@@ -215,7 +225,7 @@ function OnDrawPanelContent(GUIGroup elem, Canvas C)
 				Nodes[i].btn.absY + Nodes[i].btn.absH/2,
 				Nodes[k].btn.absX + Nodes[k].btn.absW/2,
 				Nodes[k].btn.absY + Nodes[k].btn.absH/2,
-				Nodes[i].Savepoint.bAvailable ? (Nodes[k].Savepoint.bAvailable ? COLOR_AVAILABLE : COLOR_TO_UNAVAILABLE) : COLOR_UNAVAILABLE
+				IsSavepointAvailable(Nodes[i].Savepoint)  ? (IsSavepointAvailable(Nodes[k].Savepoint) ? COLOR_AVAILABLE : COLOR_TO_UNAVAILABLE) : COLOR_UNAVAILABLE
 			);
 		}
 	}
