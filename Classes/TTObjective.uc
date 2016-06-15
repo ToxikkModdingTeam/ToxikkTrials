@@ -15,11 +15,11 @@ class TTObjective extends TTLevel
 simulated function ReachedBy(CRZPawn P)
 {
 	NotifyPlayer(P);
-	UpdatePlayerTargets(P);
-	ResetRespawnPointFor(P);
 	CheckLevelTime(P);
-	//ResetLevelTimerFor(P);
+	ResetRespawnPointFor(P);
 	ValidateObjectiveFor(P);
+	UpdatePlayerTargets(P);
+	//ResetLevelTimerFor(P);
 }
 
 // when we finish a Objective, we must set the Spawnpoint back to the last Level (not keep the last Savepoint) !
@@ -52,14 +52,9 @@ simulated function ValidateObjectiveFor(CRZPawn P)
 			PRI.CurrentLevel = None;    // can't be in a level after finished global - until respawn at some TTLevel
 			PRI.ClearTimer('SendTimerSync');
 
-			CheckGlobalTime(P);
+			TTGame(WorldInfo.Game).CheckGlobalTime(PRI);
 		}
 	}
-}
-
-function CheckGlobalTime(CRZPawn P)
-{
-	//TODO: actual records
 }
 
 

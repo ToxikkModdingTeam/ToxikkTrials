@@ -53,6 +53,7 @@ function CreateElements(Canvas C)
 	GlobalTimer.title.SetTextAlign(ALIGN_CENTER, ALIGN_TOP);
 
 	GlobalTimer.timer = class'GUIlabel'.static.CreateLabel(GlobalTimer.grp, FormatTrialTime(0));
+	GlobalTimer.timer.SizeToFit(C);
 	GlobalTimer.timer.SetPosAuto("bottom:100%-8; center-x:50%; width:100%");
 	GlobalTimer.timer.SetTextAlign(ALIGN_CENTER, ALIGN_TOP);
 
@@ -65,6 +66,7 @@ function CreateElements(Canvas C)
 	LevelTimer.title.SetTextAlign(ALIGN_CENTER, ALIGN_TOP);
 
 	LevelTimer.timer = class'GUIlabel'.static.CreateLabel(LevelTimer.grp, FormatTrialTime(0));
+	LevelTimer.timer.SizeToFit(C);
 	LevelTimer.timer.SetPosAuto("bottom:100%-8; center-x:50%; width:100%");
 	LevelTimer.timer.SetTextAlign(ALIGN_CENTER, ALIGN_TOP);
 }

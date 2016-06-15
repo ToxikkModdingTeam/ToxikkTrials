@@ -1,20 +1,21 @@
 //================================================================
-// Trials.TTPlayersList
+// Trials.TTMaplist
 // ----------------
 // ...
 // ----------------
 // by Chatouille
 //================================================================
-class TTPlayersList extends Object
+class TTMaplist extends Object
 	Config(TrialsData)
 	PerObjectConfig;
 
-struct sPlayerData
+var config array<String> Map;
+
+
+static function TTMaplist Load()
 {
-	var String Name;
-	var int TotalPoints;
-};
-var config array<sPlayerData> Player;
+	return new(None, "TTMaplist") default.class(None);
+}
 
 defaultproperties
 {

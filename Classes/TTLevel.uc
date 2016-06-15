@@ -20,11 +20,11 @@ var int LevelIdx;
 /** Called by the gamemode */
 simulated function ReachedBy(CRZPawn P)
 {
-	SetRespawnPointFor(P);
 	NotifyPlayer(P);
+	CheckLevelTime(P);
+	SetRespawnPointFor(P);
 	UpdatePlayerTargets(P);
 	ModifyPlayer(P);
-	CheckLevelTime(P);
 	ResetLevelTimerFor(P);
 }
 
@@ -47,7 +47,7 @@ function CheckLevelTime(CRZPawn P)
 	if ( PRI.CurrentLevel == None ) // Ignore leveltime if we are not in a valid level
 		return;
 
-	//TODO: actual records
+	TTGame(WorldInfo.Game).CheckLevelTime(PRI);
 }
 
 /** Called by the gamemode */

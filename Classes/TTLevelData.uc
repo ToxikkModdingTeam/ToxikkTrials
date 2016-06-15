@@ -1,15 +1,23 @@
 //================================================================
-// Trials.TTMapsList
+// Trials.TTLevelData
 // ----------------
 // ...
 // ----------------
 // by Chatouille
 //================================================================
-class TTMapsList extends Object
+class TTLevelData extends Object DependsOn(TTMapData)
 	Config(TrialsData)
 	PerObjectConfig;
 
-var config array<String> Map;
+
+var config array<sRecord> Record;
+
+
+static function TTLevelData Load(String MapName, int LevelIdx)
+{
+	return new(None, "TTLevel-"$LevelIdx$"-"$MapName) default.class(None);
+}
+
 
 defaultproperties
 {

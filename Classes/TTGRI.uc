@@ -7,6 +7,8 @@
 //================================================================
 class TTGRI extends CRZGameReplicationInfo;
 
+CONST LEADERBOARD_SIZE = 10;
+
 /** List of all points */
 var array<TTWaypoint> AllPoints;
 
@@ -16,10 +18,23 @@ var int TotalObjectives;
 /** Server Replicated - Reference to Point Zero */
 var TTPointZero PointZero;
 
+/** List of all level points */
+var array<TTLevel> LevelPoints;
+
+/** Server Replicated - Leaderboard */
+struct sPlayerInfo
+{
+	var String Name;
+	var int Points;
+};
+var sPlayerInfo Leaderboard[LEADERBOARD_SIZE];
+
 Replication
 {
 	if ( bNetInitial )
 		PointZero;
+	if ( bNetInitial || bNetDirty )
+		Leaderboard;
 }
 
 simulated function PostBeginPlay()
@@ -39,14 +54,13 @@ simulated function BuildPointsList()
 {
 	local TTWaypoint Wp;
 	local int i;
-	local array<TTLevel> LevelPoints;
 
 	TotalObjectives = 0;
 	foreach WorldInfo.AllActors(class'TTWaypoint', Wp)
 	{
 		AllPoints.AddItem(Wp);
 
-		if ( Wp.IsA('TTLevel') )
+		if ( Wp.IsA('TTLevel') && !Wp.IsA('TTObjective') )
 			LevelPoints.AddItem(TTLevel(Wp));
 
 		if ( Wp.IsA('TTObjective') )
@@ -63,11 +77,11 @@ simulated function BuildPointsList()
 
 function int CompareLevelPoints(TTLevel P1, TTLevel P2)
 {
-	if ( P1.Location.X == P2.Location.X )
+	if ( int(P1.Location.X) == int(P2.Location.X) )
 	{
-		if ( P1.Location.Y == P2.Location.Y )
+		if ( int(P1.Location.Y) == int(P2.Location.Y) )
 		{
-			if ( P1.Location.Z == P2.Location.Z )
+			if ( int(P1.Location.Z) == int(P2.Location.Z) )
 				return (String(P2.Name) < String(P1.Name) ? 1 : -1);
 
 			return (P1.Location.Z < P2.Location.Z ? 1 : -1);
@@ -128,6 +142,7 @@ function CheckReachability()
 			`Log("[Trials] WARNING - Waypoint has no successors : " $ AllPoints[i].Name);
 	}
 }
+
 
 defaultproperties
 {

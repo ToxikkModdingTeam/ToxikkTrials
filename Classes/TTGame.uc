@@ -11,8 +11,20 @@ class TTGame extends CRZGame
 /** Server - holds our TT GRI */
 var TTGRI GRI;
 
+/** Server - holds Playerlist instance */
+var TTPlayerlist Playerlist;
+
+/** Server - holds current map's MapData instance */
+var TTMapData MapData;
+
+/** Server - Sortmap for Playerlist */
+var array<int> PlayerSortmap;
+
+
 function PostBeginPlay()
 {
+	local int NumLevelRecords, i;
+
 	Super.PostBeginPlay();
 
 	// force a few config values...
@@ -24,15 +36,102 @@ function PostBeginPlay()
 
 	// init config - generate first time ini for server admins
 	InitConfig();
-
 	`Log("[Trials] Config available in UDKTrials.ini");
 
+	Playerlist = class'TTPlayerlist'.static.Load();
+	`Log("[Trials] Playerlist loaded - " $ Playerlist.Player.Length $ " players");
+
 	GRI = TTGRI(GameReplicationInfo);
+
+	CheckMaplist();
+
+	MapData = class'TTMapData'.static.Load(WorldInfo.GetMapName(true), GRI.LevelPoints.Length);
+
+	NumLevelRecords = 0;
+	for ( i=0; i<MapData.Levels.Length; i++ )
+		NumLevelRecords += MapData.Levels[i].Record.Length;
+
+	`Log("[Trials] MapData loaded -" @ MapData.GlobalRecord.Length @ "map records," @ MapData.Levels.Length @ "levels," @ NumLevelRecords @ "level records");
+
+	//TODO: build Mapboard
+	//TODO: build Levelboards
+	UpdateLeaderboard();
 }
 
 function InitConfig()
 {
 	SaveConfig();
+}
+
+function CheckMaplist()
+{
+	local TTMaplist StoredMaplist;
+	local array<UDKUIResourceDataProvider> Providers;
+	local int i,j;
+	local CRZUIDataProvider_MapInfo MapInfo;
+	local array<bool> bFoundMap;
+	local bool bModified;
+
+	StoredMaplist = class'TTMaplist'.static.Load();
+	bFoundMap.Length = StoredMaplist.Map.Length;
+
+	class'CRZUIDataStore_MenuItems'.static.GetAllResourceDataProviders(class'CRZUIDataProvider_MapInfo', Providers);
+	for ( i=0; i<Providers.Length; i++ )
+	{
+		MapInfo = CRZUIDataProvider_MapInfo(Providers[i]);
+		if ( MapInfo != None )
+		{
+			j = StoredMaplist.Map.Find(MapInfo.MapName);
+			if ( j == INDEX_NONE )
+			{
+				`Log("[Trials] New map detected: " $ MapInfo.MapName);
+				ToggleRecordsForMap(MapInfo.MapName, +1);
+				StoredMaplist.Map.AddItem(MapInfo.MapName);
+				bModified = true;
+			}
+			else
+				bFoundMap[j] = true;
+		}
+	}
+
+	for ( i=0; i<bFoundMap.Length; i++ )
+	{
+		if ( !bFoundMap[i] )
+		{
+			`Log("[Trials] A map was removed: " $ StoredMaplist.Map[i]);
+			ToggleRecordsForMap(StoredMaplist.Map[i], -1);
+			StoredMaplist.Map.Remove(i,1);
+			i--;
+			bModified = true;
+		}
+	}
+
+	if ( bModified )
+	{
+		StoredMaplist.SaveConfig();
+		Playerlist.SaveConfig();
+	}
+}
+
+//TODO: This can lead to huge iterations count if several maps got removed.
+// Build a queue of maps to process and process one per Tick.
+function ToggleRecordsForMap(String MapName, int Sign)
+{
+	local TTMapData Data;
+	local int i,j;
+
+	Data = class'TTMapData'.static.Load(MapName);
+	for ( i=0; i<Data.GlobalRecord.Length; i++ )
+	{
+		Playerlist.Player[Data.GlobalRecord[i].PlayerIdx].TotalPoints += Sign * PointsForGlobalRank(Data.GlobalRecord[i].Rank);
+	}
+	for ( i=0; i<Data.Levels.Length; i++ )
+	{
+		for ( j=0; j<Data.Levels[i].Record.Length; j++ )
+		{
+			Playerlist.Player[Data.Levels[i].Record[j].PlayerIdx].TotalPoints += Sign * PointsForLevelRank(Data.Levels[i].Record[j].Rank);
+		}
+	}
 }
 
 // Replace pickup & weapon bases with our all-instant ones
@@ -106,6 +205,11 @@ function SetPlayerDefaults(Pawn PlayerPawn)
 	}
 }
 
+
+//================================================
+// Damage and kills
+//================================================
+
 function ReduceDamage(out int Damage, Pawn injured, Controller InstigatedBy, Vector HitLocation, out Vector Momentum, class<DamageType> DamageType, Actor DamageCauser)
 {
 	// negate any player-to-player damage
@@ -122,6 +226,11 @@ function ReduceDamage(out int Damage, Pawn injured, Controller InstigatedBy, Vec
 // remove all default scoring stuff
 function ScoreKill(Controller Killer, Controller Other) {}
 function Killed(Controller Killer, Controller KilledPlayer, Pawn KilledPawn, class<DamageType> damageType) {}
+
+
+//================================================
+// Trials stuff
+//================================================
 
 function CheckPlayerObjClearance(TTPRI PRI)
 {
@@ -165,6 +274,275 @@ function PlayerReachedWaypoint(CRZPawn P, TTWaypoint Wp)
 	Wp.ReachedBy(P);
 	TTPRI(P.PlayerReplicationInfo).ClientReachedWaypoint(P, Wp);
 }
+
+function CheckGlobalTime(TTPRI PRI)
+{
+	local int Time;
+	local int i;
+	local bool bInserted, bBeaten, bBest, bModified;
+	local int CurrentRank, CurrentRangeLimit;
+	local TTPRI OtherPRI;
+
+	Time = PRI.CurrentTimeMillis() - PRI.GlobalStartDate;
+
+	// records list must ALWAYS be sorted by Time !
+	// in ONE single iteration, we can :
+	// - check if time is better than previous' player time (if any)
+	// - insert new record in the right place
+	// - calculate new time-ranges and
+	//    - update ranks for the records that were shifted up
+	//    - TODO: update/rebuild the replicated board
+	// - remove previous record
+	CurrentRangeLimit = 0;
+	CurrentRank = -1;
+	//WARNING: we go up to Length so we can factor the insert code, when rec is to be appended at end
+	for ( i=0; i<=MapData.GlobalRecord.Length; i++ )
+	{
+		// Insert new player record
+		if ( !bInserted && (i == MapData.GlobalRecord.Length || Time < MapData.GlobalRecord[i].Time) )
+		{
+			MapData.GlobalRecord.Insert(i, 1);
+			MapData.GlobalRecord[i].PlayerIdx = PRI.Idx;
+			MapData.GlobalRecord[i].Time = Time;
+
+			if ( Time > CurrentRangeLimit )
+			{
+				CurrentRank ++;
+				CurrentRangeLimit = TimeRangeLimitForTime(Time);
+			}
+
+			MapData.GlobalRecord[i].Rank = CurrentRank;
+			Playerlist.Player[PRI.Idx].TotalPoints += PointsForGlobalRank(CurrentRank);
+			PRI.TotalPoints = Playerlist.Player[PRI.Idx].TotalPoints;
+			PRI.MapPoints += PointsForGlobalRank(CurrentRank);
+
+			bModified = true;
+			bInserted = true;
+			bBest = (i == 0);
+			continue;
+		}
+		else if ( i == MapData.GlobalRecord.Length )
+			break;
+
+		// Remove player's old record
+		else if ( bInserted && MapData.GlobalRecord[i].PlayerIdx == PRI.Idx )
+		{
+			Playerlist.Player[PRI.Idx].TotalPoints -= PointsForGlobalRank(MapData.GlobalRecord[i].Rank);
+			PRI.TotalPoints = Playerlist.Player[PRI.Idx].TotalPoints;
+			PRI.MapPoints -= PointsForGlobalRank(MapData.GlobalRecord[i].Rank);
+
+			MapData.GlobalRecord.Remove(i,1);
+			i--;
+			bBeaten = true;
+			continue;
+		}
+
+		// Just passing by - keep calculating current time-range and rank
+		else if ( MapData.GlobalRecord[i].Time > CurrentRangeLimit )
+		{
+			CurrentRank ++;
+			CurrentRangeLimit = TimeRangeLimitForTime(MapData.GlobalRecord[i].Time);
+		}
+
+		// Update record Rank if it changed - should only occur for shifted-up ranks.
+		if ( MapData.GlobalRecord[i].Rank != CurrentRank )
+		{
+			// this record was not shifted up and we calculated different Rank - NOT NORMAL
+			if ( !bInserted )
+				`Log("[Trials] WARNING - Correcting incorrect Rank for GLOBAL record" @ i @ MapData.GlobalRecord[i].Rank @ "=>" @ CurrentRank);
+
+			Playerlist.Player[MapData.GlobalRecord[i].PlayerIdx].TotalPoints -= PointsForGlobalRank(MapData.GlobalRecord[i].Rank);
+			MapData.GlobalRecord[i].Rank = CurrentRank;
+			Playerlist.Player[MapData.GlobalRecord[i].PlayerIdx].TotalPoints += PointsForGlobalRank(MapData.GlobalRecord[i].Rank);
+			bModified = true;
+
+			OtherPRI = Playerlist.Player[MapData.GlobalRecord[i].PlayerIdx].PRI;
+			if ( OtherPRI != None )
+			{
+				OtherPRI.MapPoints += (Playerlist.Player[OtherPRI.Idx].TotalPoints - OtherPRI.TotalPoints);
+				OtherPRI.TotalPoints = Playerlist.Player[OtherPRI.Idx].TotalPoints;
+			}
+		}
+
+		// No new record
+		if ( MapData.GlobalRecord[i].PlayerIdx == PRI.Idx )
+			break;
+	}
+
+	if ( !bModified )
+		return;
+
+	// announce
+	if ( bBest ) BroadcastHandler.Broadcast(PRI, PRI.PlayerName @ "has set a new #1 MAP record with" @ class'TTHud'.static.FormatTrialTime(Time), 'Event');
+	else if ( bBeaten ) BroadcastHandler.Broadcast(PRI, PRI.PlayerName @ "beat his personnal MAP record with" @ class'TTHud'.static.FormatTrialTime(Time), 'Event');
+	else if ( bInserted ) BroadcastHandler.Broadcast(PRI, PRI.PlayerName @ "finished the MAP with" @ class'TTHud'.static.FormatTrialTime(Time), 'Event');
+
+	// save
+	Playerlist.SaveConfig();
+	MapData.SaveConfig();
+
+	//TODO: update the replicated Leaderboard
+}
+
+static function int TimeRangeLimitForTime(int TimeMillis)
+{
+	//? Math.pow(seconds, 1.01)
+
+	//? seconds + seconds/20
+	return TimeMillis + (TimeMillis / 20);
+}
+
+static function int PointsForGlobalRank(int Rank)
+{
+	return (Rank == -1 ? 0 : (150/(Rank+1)));
+}
+
+function CheckLevelTime(TTPRI PRI)
+{
+	local int Time;
+	local int LevelIdx, i;
+	local bool bInserted, bBeaten, bBest, bModified;
+	local int CurrentRank, CurrentRangeLimit;
+	local TTPRI OtherPRI;
+
+	if ( PRI.CurrentLevel == None )
+		return;
+
+	Time = PRI.CurrentTimeMillis() - PRI.LevelStartDate;
+	LevelIdx = PRI.CurrentLevel.LevelIdx;
+
+	CurrentRangeLimit = 0;
+	CurrentRank = -1;
+	//WARNING: we go up to Length so we can factor the insert code, when rec is to be appended at end
+	for ( i=0; i<=MapData.Levels[LevelIdx].Record.Length; i++ )
+	{
+		// Insert new player record
+		if ( !bInserted && (i == MapData.Levels[LevelIdx].Record.Length || Time < MapData.Levels[LevelIdx].Record[i].Time) )
+		{
+			MapData.Levels[LevelIdx].Record.Insert(i, 1);
+			MapData.Levels[LevelIdx].Record[i].PlayerIdx = PRI.Idx;
+			MapData.Levels[LevelIdx].Record[i].Time = Time;
+
+			if ( Time > CurrentRangeLimit )
+			{
+				CurrentRank ++;
+				CurrentRangeLimit = TimeRangeLimitForTime(Time);
+			}
+
+			MapData.Levels[LevelIdx].Record[i].Rank = CurrentRank;
+			Playerlist.Player[PRI.Idx].TotalPoints += PointsForLevelRank(CurrentRank);
+			PRI.TotalPoints = Playerlist.Player[PRI.Idx].TotalPoints;
+			PRI.MapPoints += PointsForLevelRank(CurrentRank);
+
+			bModified = true;
+			bInserted = true;
+			bBest = (i == 0);
+			continue;
+		}
+		else if ( i == MapData.Levels[LevelIdx].Record.Length )
+			break;
+
+		// Remove player's old record
+		else if ( bInserted && MapData.Levels[LevelIdx].Record[i].PlayerIdx == PRI.Idx )
+		{
+			Playerlist.Player[PRI.Idx].TotalPoints -= PointsForLevelRank(MapData.Levels[LevelIdx].Record[i].Rank);
+			PRI.TotalPoints = Playerlist.Player[PRI.Idx].TotalPoints;
+			PRI.MapPoints -= PointsForLevelRank(MapData.Levels[LevelIdx].Record[i].Rank);
+
+			MapData.Levels[LevelIdx].Record.Remove(i,1);
+			i--;
+			bBeaten = true;
+			continue;
+		}
+
+		// Just passing by - keep calculating current time-range and rank
+		else if ( MapData.Levels[LevelIdx].Record[i].Time > CurrentRangeLimit )
+		{
+			CurrentRank ++;
+			CurrentRangeLimit = TimeRangeLimitForTime(MapData.Levels[LevelIdx].Record[i].Time);
+		}
+
+		// Update record Rank if it changed - should only occur for shifted-up ranks.
+		if ( MapData.Levels[LevelIdx].Record[i].Rank != CurrentRank )
+		{
+			// this record was not shifted up and we calculated different Rank - NOT NORMAL
+			if ( !bInserted )
+				`Log("[Trials] WARNING - Correcting incorrect Rank for LEVEL record" @ LevelIdx @ i @ MapData.Levels[LevelIdx].Record[i].Rank @ "=>" @ CurrentRank);
+
+			Playerlist.Player[MapData.Levels[LevelIdx].Record[i].PlayerIdx].TotalPoints -= PointsForLevelRank(MapData.Levels[LevelIdx].Record[i].Rank);
+			MapData.Levels[LevelIdx].Record[i].Rank = CurrentRank;
+			Playerlist.Player[MapData.Levels[LevelIdx].Record[i].PlayerIdx].TotalPoints += PointsForLevelRank(MapData.Levels[LevelIdx].Record[i].Rank);
+			bModified = true;
+
+			OtherPRI = Playerlist.Player[MapData.Levels[LevelIdx].Record[i].PlayerIdx].PRI;
+			if ( OtherPRI != None )
+			{
+				OtherPRI.MapPoints += (Playerlist.Player[OtherPRI.Idx].TotalPoints - OtherPRI.TotalPoints);
+				OtherPRI.TotalPoints = Playerlist.Player[OtherPRI.Idx].TotalPoints;
+			}
+		}
+
+		// No new record
+		if ( MapData.Levels[LevelIdx].Record[i].PlayerIdx == PRI.Idx )
+			break;
+	}
+
+	if ( !bModified )
+		return;
+
+	// announce
+	if ( bBest ) BroadcastHandler.Broadcast(PRI, PRI.PlayerName @ "has set a new #1" @ PRI.CurrentLevel.LevelDisplayName @ "record with" @ class'TTHud'.static.FormatTrialTime(Time), 'Event');
+	else if ( bBeaten ) BroadcastHandler.Broadcast(PRI, PRI.PlayerName @ "beat his personnal" @ PRI.CurrentLevel.LevelDisplayName @ "record with" @ class'TTHud'.static.FormatTrialTime(Time), 'Event');
+	else if ( bInserted ) BroadcastHandler.Broadcast(PRI, PRI.PlayerName @ "finished" @ PRI.CurrentLevel.LevelDisplayName @ "with" @ class'TTHud'.static.FormatTrialTime(Time), 'Event');
+
+	// save
+	Playerlist.SaveConfig();
+	MapData.Levels[LevelIdx].SaveConfig();
+
+	//TODO: update the replicated Leaderboard
+}
+
+static function int PointsForLevelRank(int Rank)
+{
+	return (Rank == -1 ? 0 : (50/(Rank+1)));
+}
+
+
+function UpdateLeaderboard()
+{
+	local int i, k;
+
+	PlayerSortmap.Length = Playerlist.Player.Length;
+	for ( i=0; i<Playerlist.Player.Length; i++ )
+	{
+		if ( Playerlist.Player[i].TotalPoints > 0 )
+		{
+			PlayerSortmap[k] = i;
+			k++;
+		}
+	}
+	PlayerSortmap.Length = k;
+
+	PlayerSortmap.Sort(ComparePlayers);
+
+	for ( i=0; i<PlayerSortmap.Length && i<GRI.LEADERBOARD_SIZE; i++ )
+	{
+		GRI.Leaderboard[i].Name = Playerlist.Player[PlayerSortmap[i]].Name;
+		GRI.Leaderboard[i].Points = Playerlist.Player[PlayerSortmap[i]].TotalPoints;
+	}
+	for ( i=i; i<GRI.LEADERBOARD_SIZE; i++ )
+		GRI.Leaderboard[i].Points = 0;
+}
+
+function int ComparePlayers(int p1, int p2)
+{
+	return (Playerlist.Player[p1].TotalPoints - Playerlist.Player[p2].TotalPoints);
+}
+
+
+//================================================
+// End game - not much here
+//================================================
 
 function bool CheckEndGame(PlayerReplicationInfo Winner, string Reason)
 {

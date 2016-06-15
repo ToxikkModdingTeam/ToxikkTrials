@@ -44,11 +44,19 @@ var array<TTSavepoint> UnlockedSavepoints;
 /** Both-sided - Stores all currently validated Objectives for player */
 var array<TTObjective> ValidatedObjectives;
 
+/** Server - index of player in Playerlist */
+var int Idx;
+
+/** Server Replicated - Total points of player */
+var int TotalPoints;
+/** Server Replicated - Map points of player */
+var int MapPoints;
+
 
 Replication
 {
 	if ( bNetInitial || bNetDirty )
-		bHasCS, bForbiddenObj, SpawnPoint, CurrentLevel;
+		bHasCS, bForbiddenObj, SpawnPoint, CurrentLevel, TotalPoints, MapPoints;
 }
 
 
@@ -58,8 +66,19 @@ simulated function PostBeginPlay()
 
 	if ( Role == ROLE_Authority )
 	{
+		WaitForPlayerData();
 		SetSpawnPoint(TTGRI(WorldInfo.GRI).PointZero);
 	}
+}
+
+function WaitForPlayerData()
+{
+	local UniqueNetId ZeroId;
+
+	if ( PlayerName != "" && UniqueId != ZeroId )
+		TTGame(WorldInfo.Game).Playerlist.InitPlayer(Self);
+	else
+		SetTimer(0.1, false, GetFuncName());
 }
 
 function SetSpawnPoint(TTSavepoint Sp)
@@ -192,4 +211,5 @@ reliable client function ClientSyncTimers(int LevelMillis, int GlobalMillis)
 
 defaultproperties
 {
+	Idx=-1
 }
