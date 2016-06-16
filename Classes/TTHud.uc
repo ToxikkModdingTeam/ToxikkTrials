@@ -7,8 +7,17 @@
 //================================================================
 class TTHud extends CRZHud;
 
-CONST BOARD_WIDTH = 256;
+CONST BOARD_TITLEHEIGHT = 28;
 CONST BOARD_LINEHEIGHT = 24;
+CONST BOARD_PAD_Y = 12;
+CONST BOARD_PAD_X = 12;
+
+CONST COL_POS_WIDTH = 36;
+CONST COL_TIME_WIDTH = 120;
+CONST COL_POINTS_WIDTH = 40;
+CONST COL_PLAYERS_WIDTH = 200;
+var int RB_WIDTH;
+
 
 var GameViewportClient Viewport;
 var TTSpawnTree SpawnTree;
@@ -36,6 +45,7 @@ struct sRankBoard
 {
 	var GUIGroup grp;
 	var GUILabel title;
+	var sBoardLine head;
 	var array<sBoardLine> line;
 };
 var sRankBoard Globalboard;
@@ -56,6 +66,8 @@ var bool bUpdateLeaderboard;
 simulated function PostBeginPlay()
 {
 	Super.PostBeginPlay();
+
+	RB_WIDTH = COL_POS_WIDTH + COL_TIME_WIDTH + COL_POINTS_WIDTH + COL_PLAYERS_WIDTH + 2*BOARD_PAD_X;
 
 	Viewport = LocalPlayer(PlayerOwner.Player).ViewportClient;
 	SpawnTree = TTSpawnTree(CreateInteraction(class'TTSpawnTree'));
@@ -115,22 +127,24 @@ function CreateElements(Canvas C)
 
 	Globalboard.grp = class'GUIGroup'.static.CreateGroup(Root);
 	Globalboard.grp.SetColors(MakeColor(0,0,0,128), Root.TRANSPARENT);
-	Globalboard.grp.SetPosAuto("top:192; right:100%-32");
+	Globalboard.grp.SetPosAuto("top:192; right:100%-32; width:"$RB_WIDTH);
 
 	Globalboard.title = class'GUILabel'.static.CreateLabel(Globalboard.grp, "- MAP GLOBAL BOARD -");
-	Globalboard.title.SetPosAuto("top:0; center-x:50%; width:100%");
+	Globalboard.title.SetPosAuto("center-x:50%; width:100%; top:"$BOARD_PAD_Y);
 	Globalboard.title.SetTextAlign(ALIGN_CENTER, ALIGN_TOP);
 
+	CreateLine(Globalboard.head, Globalboard.grp, -1, "RNK", "TIME", "PTS", "PLAYERS");
 	UpdateGlobalboard(C);
 
 	Levelboard.grp = class'GUIGroup'.static.CreateGroup(Root);
 	Levelboard.grp.SetColors(MakeColor(0,0,0,128), Root.TRANSPARENT);
-	Levelboard.grp.SetPosAuto("top:192; left:32");
+	Levelboard.grp.SetPosAuto("top:192; left:32; width:"$RB_WIDTH);
 
-	Levelboard.title = class'GUILabel'.static.CreateLabel(Globalboard.grp, "- CURRENT LEVEL BOARD -");
-	Levelboard.title.SetPosAuto("top:0; center-x:50%; width:100%");
+	Levelboard.title = class'GUILabel'.static.CreateLabel(Levelboard.grp, "- CURRENT LEVEL BOARD -");
+	Levelboard.title.SetPosAuto("center-x:50%; width:100%; top:"$BOARD_PAD_Y);
 	Levelboard.title.SetTextAlign(ALIGN_CENTER, ALIGN_TOP);
 
+	CreateLine(Levelboard.head, Levelboard.grp, -1, "RNK", "TIME", "PTS", "PLAYERS");
 	UpdateLevelboard(C);
 }
 
@@ -138,12 +152,12 @@ function UpdateGlobalboard(Canvas C)
 {
 	local int i;
 	local String time;
-	local GUIGroup line;
+	local sBoardLine line;
 
 	// update existing lines
 	for ( i=0; i<Globalboard.line.Length; i++ )
 	{
-		time = FormatTrialTime(GRI.Globalboard[i].TimeRangeLimit);
+		time = "<"@FormatTrialTime(GRI.Globalboard[i].TimeRangeLimit);
 		if ( Globalboard.line[i].time.Text != time || Globalboard.line[i].players.Text != GRI.Globalboard[i].Players )
 		{
 			Globalboard.line[i].time.Text = time;
@@ -159,60 +173,53 @@ function UpdateGlobalboard(Canvas C)
 		if ( GRI.Globalboard[i].TimeRangeLimit <= 0 )
 			break;
 
+		CreateLine(line, Globalboard.grp, i,
+			Right("0"$(i+1)$".",3),
+			"<"@FormatTrialTime(GRI.Globalboard[i].TimeRangeLimit),
+			class'TTGame'.static.PointsForGlobalRank(i),
+			GRI.Globalboard[i].Players
+		);
+
 		Globalboard.line.Length = i+1;
+		Globalboard.line[i] = line;
 
-		line = class'GUIGroup'.static.CreateGroup(Globalboard.grp);
-		Globalboard.line[i].grp = line;
-		line.SetPosAuto("left:0; top:"$(i*BOARD_LINEHEIGHT)$"; width:100%; height:"$BOARD_LINEHEIGHT);
-
-		Globalboard.line[i].pos = class'GUILabel'.static.CreateLabel(line, i$".");
-		Globalboard.line[i].pos.SetPosAuto("left:0; width:32; center-y:50%");
-
-		Globalboard.line[i].time = class'GUILabel'.static.CreateLabel(line, FormatTrialTime(GRI.Globalboard[i].TimeRangeLimit));
-		Globalboard.line[i].time.SetPosAuto("left:32; width:64; center-y:50%");
-
-		Globalboard.line[i].points = class'GUILabel'.static.CreateLabel(line, class'TTGame'.static.PointsForGlobalRank(i));
-		Globalboard.line[i].points.SetPosAuto("left:96; width:48; center-y:50%");
-
-		Globalboard.line[i].players = class'GUILabel'.static.CreateLabel(line, GRI.Globalboard[i].Players);
-		Globalboard.line[i].players.SetPosAuto("left:144; right:100%; center-y:50%");
-
-		FlashBoardLine(line);
+		FlashBoardLine(line.grp);
 	}
 
 	if ( Globalboard.line.Length > 0 )
-		Globalboard.grp.SetPosAuto("height:" $ (Globalboard.line[Globalboard.line.Length-1].grp.offY.Val+BOARD_LINEHEIGHT));
+		Globalboard.grp.SetPosAuto("height:" $ (Globalboard.line[Globalboard.line.Length-1].grp.offY.Val+BOARD_LINEHEIGHT+BOARD_PAD_Y));
+	else
+		Globalboard.grp.SetPosAuto("height:" $ (Globalboard.head.grp.offY.Val+BOARD_LINEHEIGHT+BOARD_PAD_Y));
 
 	bUpdateGlobalboard = false;
-}
-
-static function FlashBoardLine(GUIGroup line)
-{
-	line.ColorsTo(MakeColor(255,255,255,200), MakeColor(255,255,0,255), 0.2, ANIM_LINEAR);
-	line.QueueColors(line.TRANSPARENT, MakeColor(255,255,255,64), 0.5, ANIM_LINEAR);
 }
 
 function UpdateLevelboard(Canvas C)
 {
 	local TTPRI PRI;
+	local int i;
 
 	PRI = TTPRI(PlayerOwner.PlayerReplicationInfo);
 	if ( PRI != None && PRI.CurrentLevel != None && GRI != None && PRI.CurrentLevel.LevelIdx < GRI.MAX_LEVELBOARDS )
 	{
+		// Just changed level - clear lines and rebuild the board
 		if ( Levelboard.title.Text != PRI.CurrentLevel.LevelDisplayName )
 		{
 			Levelboard.title.Text = PRI.CurrentLevel.LevelDisplayName;
-			Levelboard.grp.Clear();
+			for ( i=0; i<Levelboard.line.Length; i++ )
+				Levelboard.line[i].grp.RemoveFromParent();
 			Levelboard.line.Length = 0;
 		}
+
+		// update board
+		Levelboard.grp.AlphaTo(1, 0.5, ANIM_LINEAR);
 		__UpdateLevelboard(C, PRI.CurrentLevel.LevelIdx);
 	}
-	else if ( Levelboard.line.Length > 0 )
-	{
-		Levelboard.grp.Clear();
-		Levelboard.line.Length = 0;
-		Levelboard.grp.SetPosAuto("height:0");
-	}
+
+	// Not in a level - hide the board
+	else
+		Levelboard.grp.AlphaTo(0, 0.5, ANIM_LINEAR);
+
 	bUpdateLevelboard = false;
 }
 
@@ -220,12 +227,12 @@ function __UpdateLevelboard(Canvas C, int Idx)
 {
 	local int i;
 	local String time;
-	local GUIGroup line;
+	local sBoardLine line;
 
 	// update existing lines
 	for ( i=0; i<Levelboard.line.Length; i++ )
 	{
-		time = FormatTrialTime(GRI.Levelboard[Idx].Board[i].TimeRangeLimit);
+		time = "<"@FormatTrialTime(GRI.Levelboard[Idx].Board[i].TimeRangeLimit);
 		if ( Levelboard.line[i].time.Text != time || Levelboard.line[i].players.Text != GRI.Levelboard[Idx].Board[i].Players )
 		{
 			Levelboard.line[i].time.Text = time;
@@ -241,29 +248,60 @@ function __UpdateLevelboard(Canvas C, int Idx)
 		if ( GRI.Levelboard[Idx].Board[i].TimeRangeLimit <= 0 )
 			break;
 
+		CreateLine(line, Levelboard.grp, i,
+			Right("0"$(i+1)$".",3),
+			"<"@FormatTrialTime(GRI.Levelboard[Idx].Board[i].TimeRangeLimit),
+			class'TTGame'.static.PointsForLevelRank(i),
+			GRI.Levelboard[Idx].Board[i].Players
+		);
+
 		Levelboard.line.Length = i+1;
+		Levelboard.line[i] = line;
 
-		line = class'GUIGroup'.static.CreateGroup(Levelboard.grp);
-		Levelboard.line[i].grp = line;
-		line.SetPosAuto("left:0; top:"$(i*BOARD_LINEHEIGHT)$"; width:100%; height:"$BOARD_LINEHEIGHT);
-
-		Levelboard.line[i].pos = class'GUILabel'.static.CreateLabel(line, i$".");
-		Levelboard.line[i].pos.SetPosAuto("left:0; width:32; center-y:50%");
-
-		Levelboard.line[i].time = class'GUILabel'.static.CreateLabel(line, FormatTrialTime(GRI.Levelboard[Idx].Board[i].TimeRangeLimit));
-		Levelboard.line[i].time.SetPosAuto("left:32; width:64; center-y:50%");
-
-		Levelboard.line[i].points = class'GUILabel'.static.CreateLabel(line, class'TTGame'.static.PointsForGlobalRank(i));
-		Levelboard.line[i].points.SetPosAuto("left:96; width:48; center-y:50%");
-
-		Levelboard.line[i].players = class'GUILabel'.static.CreateLabel(line, GRI.Levelboard[Idx].Board[i].Players);
-		Levelboard.line[i].players.SetPosAuto("left:144; right:100%; center-y:50%");
-
-		FlashBoardLine(line);
+		FlashBoardLine(line.grp);
 	}
 
 	if ( Levelboard.line.Length > 0 )
-		Levelboard.grp.SetPosAuto("height:" $ (Levelboard.line[Levelboard.line.Length-1].grp.offY.Val+BOARD_LINEHEIGHT));
+		Levelboard.grp.SetPosAuto("height:" $ (Levelboard.line[Levelboard.line.Length-1].grp.offY.Val+BOARD_LINEHEIGHT+BOARD_PAD_Y));
+	else
+		Levelboard.grp.SetPosAuto("height:" $ (Levelboard.head.grp.offY.Val+BOARD_LINEHEIGHT+BOARD_PAD_Y));
+}
+
+static function CreateLine(out sBoardLine line, GUIGroup Parent, int Pos, coerce String Rank, String Time, coerce String Points, String Players)
+{
+	local int x;
+
+	Pos = Pos+1;    //shift because of head
+
+	line.grp = class'GUIGroup'.static.CreateGroup(Parent);
+	line.grp.SetPosAuto("center-x:50%; width:100%-"$(2*BOARD_PAD_X)$"; top:"$(BOARD_PAD_Y+BOARD_TITLEHEIGHT+Pos*BOARD_LINEHEIGHT)$"; height:"$BOARD_LINEHEIGHT);
+	line.grp.SetColors(line.grp.TRANSPARENT, MakeColor(255,255,255,32));
+	x = 0;
+
+	line.pos = class'GUILabel'.static.CreateLabel(line.grp, Rank);
+	line.pos.SetPosAuto("center-y:50%; left:"$x$"; width:"$COL_POS_WIDTH);
+	line.pos.SetTextAlign(ALIGN_CENTER, ALIGN_MIDDLE);
+	x += COL_POS_WIDTH;
+
+	line.time = class'GUILabel'.static.CreateLabel(line.grp, Time);
+	line.time.SetPosAuto("center-y:50%; left:"$x$"; width:"$COL_TIME_WIDTH);
+	line.time.SetTextAlign(ALIGN_CENTER, ALIGN_MIDDLE);
+	x += COL_TIME_WIDTH;
+
+	line.points = class'GUILabel'.static.CreateLabel(line.grp, Points);
+	line.points.SetPosAuto("center-y:50%; left:"$x$"; width:"$COL_POINTS_WIDTH);
+	line.points.SetTextAlign(ALIGN_CENTER, ALIGN_MIDDLE);
+	x += COL_POINTS_WIDTH;
+
+	line.players = class'GUILabel'.static.CreateLabel(line.grp, Players);
+	line.players.SetPosAuto("center-y:50%; left:"$x$"; width:"$COL_PLAYERS_WIDTH);
+	line.players.SetTextAlign(ALIGN_LEFT, ALIGN_MIDDLE);
+}
+
+static function FlashBoardLine(GUIGroup line)
+{
+	line.ColorsTo(MakeColor(255,200,128,220), line.BoxColor.Val, 0.2, ANIM_LINEAR);
+	line.QueueColors(line.TRANSPARENT, line.BoxColor.Val, 1.0, ANIM_LINEAR);
 }
 
 function UpdateLeaderboard(Canvas C)
@@ -297,10 +335,10 @@ simulated event Tick(float dt)
 			if ( PRI.CurrentLevel != None )
 			{
 				LevelTimer.title.Text = PRI.CurrentLevel.LevelDisplayName;
-				LevelTimer.grp.SetAlpha(1);
+				LevelTimer.grp.AlphaTo(1, 0.5, ANIM_LINEAR);
 			}
 			else
-				LevelTimer.grp.SetAlpha(0);
+				LevelTimer.grp.AlphaTo(0, 0.5, ANIM_LINEAR);
 		}
 		Root.Tick(dt);
 	}

@@ -24,7 +24,7 @@ var bool bMustDieToClean;
 var TTSavepoint SpawnPoint;
 
 /** Server Replicated - Stores the current level spawn point */
-var TTLevel CurrentLevel;
+var RepNotify TTLevel CurrentLevel;
 
 /** Client Replicated - Whether current spawn point is locked */
 var bool bLockedSpawnPoint;
@@ -83,7 +83,7 @@ function WaitForPlayerData()
 
 function SetSpawnPoint(TTSavepoint Sp)
 {
-	if ( bLockedSpawnPoint || Sp == None )
+	if ( bLockedSpawnPoint || Sp == SpawnPoint || Sp == None )
 		return;
 
 	if ( !Sp.bInitiallyAvailable && UnlockedSavepoints.Find(Sp) == INDEX_NONE )
@@ -98,6 +98,10 @@ function SetSpawnPoint(TTSavepoint Sp)
 		CurrentLevel = TTLevel(Sp);
 	else if ( CurrentLevel != None && !Sp.FindInPredecessors(Currentlevel) )
 		CurrentLevel = None;    // we switched level but picked a Savepoint (not a LevelStart) - timer is not valid
+	else
+		return;
+	if ( WorldInfo.NetMode == NM_Standalone )
+		ReplicatedEvent('CurrentLevel');
 }
 
 reliable server function ServerPickSpawnPoint(TTSavepoint Sp, bool bLock=false)
@@ -206,6 +210,14 @@ reliable client function ClientSyncTimers(int LevelMillis, int GlobalMillis)
 		// pick middleground
 		GlobalStartDate = (GlobalStartDate + EstimatedGlobalStart) / 2;
 	}
+}
+
+simulated event ReplicatedEvent(Name VarName)
+{
+	if ( VarName == 'CurrentLevel' )
+		TTHud(GetALocalPlayerController().myHUD).bUpdateLevelboard = true;
+	else
+		Super.ReplicatedEvent(VarName);
 }
 
 

@@ -82,6 +82,7 @@ function CheckMaplist()
 	StoredMaplist = class'TTMaplist'.static.Load();
 	bFoundMap.Length = StoredMaplist.Map.Length;
 
+
 	class'CRZUIDataStore_MenuItems'.static.GetAllResourceDataProviders(class'CRZUIDataProvider_MapInfo', Providers);
 	for ( i=0; i<Providers.Length; i++ )
 	{
@@ -108,7 +109,7 @@ function CheckMaplist()
 			`Log("[Trials] A map was removed: " $ StoredMaplist.Map[i]);
 			ToggleRecordsForMap(StoredMaplist.Map[i], -1);
 			StoredMaplist.Map.Remove(i,1);
-			i--;
+			bFoundMap.Remove(i--,1);
 			bModified = true;
 		}
 	}
@@ -391,8 +392,7 @@ function CheckGlobalTime(TTPRI PRI)
 			PRI.TotalPoints = Playerlist.Player[PRI.Idx].TotalPoints;
 			PRI.MapPoints -= PointsForGlobalRank(MapData.GlobalRecord[i].Rank);
 
-			MapData.GlobalRecord.Remove(i,1);
-			i--;
+			MapData.GlobalRecord.Remove(i--,1);
 			bBeaten = true;
 			continue;
 		}
@@ -519,8 +519,7 @@ function CheckLevelTime(TTPRI PRI)
 			PRI.TotalPoints = Playerlist.Player[PRI.Idx].TotalPoints;
 			PRI.MapPoints -= PointsForLevelRank(MapData.Levels[LevelIdx].Record[i].Rank);
 
-			MapData.Levels[LevelIdx].Record.Remove(i,1);
-			i--;
+			MapData.Levels[LevelIdx].Record.Remove(i--,1);
 			bBeaten = true;
 			continue;
 		}
