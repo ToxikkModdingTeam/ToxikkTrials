@@ -8,6 +8,9 @@
 class TTGRI extends CRZGameReplicationInfo;
 
 CONST LEADERBOARD_SIZE = 10;
+CONST GLOBALBOARD_SIZE = 10;
+CONST MAX_LEVELBOARDS = 16;
+CONST LEVELBOARD_SIZE = 10;
 
 /** List of all points */
 var array<TTWaypoint> AllPoints;
@@ -21,20 +24,49 @@ var TTPointZero PointZero;
 /** List of all level points */
 var array<TTLevel> LevelPoints;
 
-/** Server Replicated - Leaderboard */
+/** Stores information about a player in Leaderboard */
 struct sPlayerInfo
 {
 	var String Name;
 	var int Points;
+	structdefaultproperties
+	{
+		Name=""
+		Points=0
+	}
 };
-var sPlayerInfo Leaderboard[LEADERBOARD_SIZE];
+/** Server Replicated - Leaderboard */
+var RepNotify sPlayerInfo Leaderboard[LEADERBOARD_SIZE];
+
+/** Stores information about a rank in Globalboard or Levelboard */
+struct sRankInfo
+{
+	var int TimeRangeLimit;
+	var String Players;
+	structdefaultproperties
+	{
+		TimeRangeLimit=0
+		Players=""
+	}
+};
+/** Server Replicated - Global board */
+var RepNotify sRankInfo Globalboard[GLOBALBOARD_SIZE];
+
+/** Wraps Levelboard in a struct so we can use an array of it */
+struct sLevelboard
+{
+	var sRankInfo Board[LEVELBOARD_SIZE];
+};
+/** Server Replicated - Levels boards */
+var RepNotify sLevelboard Levelboard[MAX_LEVELBOARDS];
+
 
 Replication
 {
 	if ( bNetInitial )
 		PointZero;
 	if ( bNetInitial || bNetDirty )
-		Leaderboard;
+		Leaderboard, Globalboard, Levelboard;
 }
 
 simulated function PostBeginPlay()
@@ -141,6 +173,21 @@ function CheckReachability()
 		else if ( AllPoints[i].NextPoints.Length == 0 && !AllPoints[i].IsA('TTObjective') )
 			`Log("[Trials] WARNING - Waypoint has no successors : " $ AllPoints[i].Name);
 	}
+}
+
+
+simulated event ReplicatedEvent(Name VarName)
+{
+	`Log("[D] GRI ReplicatedEvent: " $ String(VarName));	//TODO: See how static array repnotifies
+
+	if ( VarName == 'Globalboard' )
+		TTHud(GetALocalPlayerController().myHUD).bUpdateGlobalboard = true;
+	else if ( VarName == 'Levelboard' )
+		TTHud(GetALocalPlayerController().myHUD).bUpdateLevelboard = true;
+	else if ( VarName == 'Leaderboard' )
+		TTHud(GetALocalPlayerController().myHUD).bUpdateLeaderboard = true;
+	else
+		Super.ReplicatedEvent(VarName);
 }
 
 

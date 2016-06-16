@@ -21,6 +21,10 @@ var TTMapData MapData;
 var array<int> PlayerSortmap;
 
 
+//================================================
+// Initialization
+//================================================
+
 function PostBeginPlay()
 {
 	local int NumLevelRecords, i;
@@ -47,14 +51,17 @@ function PostBeginPlay()
 
 	MapData = class'TTMapData'.static.Load(WorldInfo.GetMapName(true), GRI.LevelPoints.Length);
 
+	BuildGlobalboard();
+
 	NumLevelRecords = 0;
 	for ( i=0; i<MapData.Levels.Length; i++ )
+	{
+		BuildLevelboard(i);
 		NumLevelRecords += MapData.Levels[i].Record.Length;
+	}
 
 	`Log("[Trials] MapData loaded -" @ MapData.GlobalRecord.Length @ "map records," @ MapData.Levels.Length @ "levels," @ NumLevelRecords @ "level records");
 
-	//TODO: build Mapboard
-	//TODO: build Levelboards
 	UpdateLeaderboard();
 }
 
@@ -133,6 +140,54 @@ function ToggleRecordsForMap(String MapName, int Sign)
 		}
 	}
 }
+
+
+function BuildGlobalboard()
+{
+	local int i, CurrentRank, CurrentRangeLimit;
+
+	CurrentRank = -1;
+	CurrentRangeLimit = 0;
+	for ( i=0; i<MapData.GlobalRecord.Length; i++ )
+	{
+		if ( MapData.GlobalRecord[i].Time > CurrentRangeLimit )
+		{
+			CurrentRank++;
+			CurrentRangeLimit = TimeRangeLimitForTime(MapData.GlobalRecord[i].Time);
+			if ( CurrentRank < GRI.GLOBALBOARD_SIZE )
+			{
+				GRI.Globalboard[CurrentRank].TimeRangeLimit = CurrentRangeLimit;
+				GRI.Globalboard[CurrentRank].Players = Playerlist.Player[MapData.GlobalRecord[i].PlayerIdx].Name;
+			}
+		}
+	}
+}
+
+function BuildLevelboard(int Idx)
+{
+	local int i, CurrentRank, CurrentRangeLimit;
+
+	CurrentRank = -1;
+	CurrentRangeLimit = 0;
+	for ( i=0; i<MapData.Levels[Idx].Record.Length; i++ )
+	{
+		if ( MapData.Levels[Idx].Record[i].Time > CurrentRangeLimit )
+		{
+			CurrentRank++;
+			CurrentRangeLimit = TimeRangeLimitForTime(MapData.Levels[Idx].Record[i].Time);
+			if ( CurrentRank < GRI.GLOBALBOARD_SIZE )
+			{
+				GRI.Levelboard[Idx].Board[CurrentRank].TimeRangeLimit = CurrentRangeLimit;
+				GRI.Levelboard[Idx].Board[CurrentRank].Players = Playerlist.Player[MapData.Levels[Idx].Record[i].PlayerIdx].Name;
+			}
+		}
+	}
+}
+
+
+//================================================
+// Spawning
+//================================================
 
 // Replace pickup & weapon bases with our all-instant ones
 function bool CheckRelevance(Actor Other)
@@ -291,7 +346,7 @@ function CheckGlobalTime(TTPRI PRI)
 	// - insert new record in the right place
 	// - calculate new time-ranges and
 	//    - update ranks for the records that were shifted up
-	//    - TODO: update/rebuild the replicated board
+	//    - update the replicated board
 	// - remove previous record
 	CurrentRangeLimit = 0;
 	CurrentRank = -1;
@@ -309,6 +364,11 @@ function CheckGlobalTime(TTPRI PRI)
 			{
 				CurrentRank ++;
 				CurrentRangeLimit = TimeRangeLimitForTime(Time);
+				if ( CurrentRank < GRI.GLOBALBOARD_SIZE )
+				{
+					GRI.Globalboard[CurrentRank].TimeRangeLimit = CurrentRangeLimit;
+					GRI.Globalboard[CurrentRank].Players = Playerlist.Player[PRI.Idx].Name;
+				}
 			}
 
 			MapData.GlobalRecord[i].Rank = CurrentRank;
@@ -342,6 +402,11 @@ function CheckGlobalTime(TTPRI PRI)
 		{
 			CurrentRank ++;
 			CurrentRangeLimit = TimeRangeLimitForTime(MapData.GlobalRecord[i].Time);
+			if ( CurrentRank < GRI.GLOBALBOARD_SIZE )
+			{
+				GRI.Globalboard[CurrentRank].TimeRangeLimit = CurrentRangeLimit;
+				GRI.Globalboard[CurrentRank].Players = Playerlist.Player[MapData.GlobalRecord[i].PlayerIdx].Name;
+			}
 		}
 
 		// Update record Rank if it changed - should only occur for shifted-up ranks.
@@ -381,7 +446,7 @@ function CheckGlobalTime(TTPRI PRI)
 	Playerlist.SaveConfig();
 	MapData.SaveConfig();
 
-	//TODO: update the replicated Leaderboard
+	UpdateLeaderboard();
 }
 
 static function int TimeRangeLimitForTime(int TimeMillis)
@@ -427,6 +492,11 @@ function CheckLevelTime(TTPRI PRI)
 			{
 				CurrentRank ++;
 				CurrentRangeLimit = TimeRangeLimitForTime(Time);
+				if ( LevelIdx < GRI.MAX_LEVELBOARDS && CurrentRank < GRI.LEVELBOARD_SIZE )
+				{
+					GRI.Levelboard[LevelIdx].Board[CurrentRank].TimeRangeLimit = CurrentRangeLimit;
+					GRI.Levelboard[LevelIdx].Board[CurrentRank].Players = Playerlist.Player[PRI.Idx].Name;
+				}
 			}
 
 			MapData.Levels[LevelIdx].Record[i].Rank = CurrentRank;
@@ -460,6 +530,11 @@ function CheckLevelTime(TTPRI PRI)
 		{
 			CurrentRank ++;
 			CurrentRangeLimit = TimeRangeLimitForTime(MapData.Levels[LevelIdx].Record[i].Time);
+			if ( LevelIdx < GRI.MAX_LEVELBOARDS && CurrentRank < GRI.LEVELBOARD_SIZE )
+			{
+				GRI.Levelboard[LevelIdx].Board[CurrentRank].TimeRangeLimit = CurrentRangeLimit;
+				GRI.Levelboard[LevelIdx].Board[CurrentRank].Players = Playerlist.Player[MapData.Levels[LevelIdx].Record[i].PlayerIdx].Name;
+			}
 		}
 
 		// Update record Rank if it changed - should only occur for shifted-up ranks.
@@ -499,7 +574,7 @@ function CheckLevelTime(TTPRI PRI)
 	Playerlist.SaveConfig();
 	MapData.Levels[LevelIdx].SaveConfig();
 
-	//TODO: update the replicated Leaderboard
+	UpdateLeaderboard();
 }
 
 static function int PointsForLevelRank(int Rank)

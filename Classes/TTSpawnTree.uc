@@ -260,7 +260,7 @@ function OnDrawNode(GUIGroup elem, Canvas C)
 
 event Tick(float dt)
 {
-	if ( PC.IsInState('Dead') && !PRI.bHasCS )
+	if ( PC != None && PC.IsInState('Dead') && !PRI.bHasCS )
 	{
 		if ( !bShow )
 			Show(true);
