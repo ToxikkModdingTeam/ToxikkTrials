@@ -45,6 +45,8 @@ simulated function SetRespawnPointFor(CRZPawn P)
 			TTHud(PlayerController(P.Controller).myHUD).SpawnTree.UpdateButtons();
 		}
 	}
+	if ( PRI.LevelReachedSavepoints.Find(Self) == INDEX_NONE )
+		PRI.LevelReachedSavepoints.AddItem(Self);
 
 	PRI.SetSpawnPoint(Self);
 }

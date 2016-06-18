@@ -65,6 +65,7 @@ simulated function ResetLevelTimerFor(CRZPawn P)
 	local TTPRI PRI;
 
 	PRI = TTPRI(P.PlayerReplicationInfo);
+	PRI.LevelReachedSavepoints.Length = 0;
 	PRI.LevelStartDate = PRI.CurrentTimeMillis();
 	if ( Role == ROLE_Authority && WorldInfo.NetMode != NM_Standalone )
 		PRI.SetTimer(1.0, true, 'SendTimerSync');

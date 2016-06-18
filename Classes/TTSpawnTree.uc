@@ -132,7 +132,7 @@ function BuildTreeNodes(Canvas C, int ParentIdx, TTWaypoint Cur, int Depth, out 
 			Nodes[i].Depth = Depth;
 			Nodes[i].Row = Row;
 			Nodes[i].btn = class'GUIButton'.static.CreateButton(Columns[Depth], Sp.SpawnTreeLabel, OnSelectNode);
-			Nodes[i].btn.Data.AddItem(String(i));
+			Nodes[i].btn.iData.AddItem(i);
 			Nodes[i].btn.SetPosAuto("center-x:40%; top:" $ (PANEL_PADDING.Y + Row*ROW_HEIGHT));
 			Nodes[i].btn.OnDraw = OnDrawNode;
 			Nodes[i].btn.SizeToFit(C);
@@ -199,7 +199,7 @@ function OnSelectNode(GUIButton elem)
 {
 	local int i;
 
-	i = int(elem.Data[0]);
+	i = elem.iData[0];
 	if ( Nodes[i].Savepoint == PRI.SpawnPoint )
 		PRI.bLockedSpawnPoint = !PRI.bLockedSpawnPoint;
 	else

@@ -48,8 +48,8 @@ simulated function ValidateObjectiveFor(CRZPawn P)
 			if ( PlayerController(P.Controller) != None )
 				PlayerController(P.Controller).ReceiveLocalizedMessage(class'TTGlobalTimeMessage', PRI.CurrentTimeMillis()-PRI.GlobalStartDate,,, Self);
 
-			//TODO: stop global timer for player
-			PRI.CurrentLevel = None;    // can't be in a level after finished global - until respawn at some TTLevel
+			PRI.SetGlobalTimerEnabled(false);
+			PRI.SetCurrentLevel(None);  // can't be in a level after finished global - until respawn at some TTLevel
 			PRI.ClearTimer('SendTimerSync');
 
 			TTGame(WorldInfo.Game).CheckGlobalTime(PRI);

@@ -52,11 +52,17 @@ var int TotalPoints;
 /** Server Replicated - Map points of player */
 var int MapPoints;
 
+/** Server - To detect fast-forwarding in a level (via Savepoints) */
+var array<TTSavepoint> LevelReachedSavepoints;
+
+/** Server Replicated - Whether GlobalTimer should be disabled (finished and waiting for RESET) */
+var bool bStopGlobal;
+
 
 Replication
 {
 	if ( bNetInitial || bNetDirty )
-		bHasCS, bForbiddenObj, SpawnPoint, CurrentLevel, TotalPoints, MapPoints;
+		bHasCS, bForbiddenObj, SpawnPoint, CurrentLevel, TotalPoints, MapPoints, bStopGlobal;
 }
 
 
@@ -83,7 +89,7 @@ function WaitForPlayerData()
 
 function SetSpawnPoint(TTSavepoint Sp)
 {
-	if ( bLockedSpawnPoint || Sp == SpawnPoint || Sp == None )
+	if ( bLockedSpawnPoint || Sp == None )
 		return;
 
 	if ( !Sp.bInitiallyAvailable && UnlockedSavepoints.Find(Sp) == INDEX_NONE )
@@ -95,11 +101,26 @@ function SetSpawnPoint(TTSavepoint Sp)
 	SpawnPoint = Sp;
 
 	if ( Sp.IsA('TTLevel') )
-		CurrentLevel = TTLevel(Sp);
-	else if ( CurrentLevel != None && !Sp.FindInPredecessors(Currentlevel) )
-		CurrentLevel = None;    // we switched level but picked a Savepoint (not a LevelStart) - timer is not valid
-	else
-		return;
+		SetCurrentLevel(TTLevel(Sp));
+	else if ( CurrentLevel != None && LevelReachedSavepoints.Find(Sp) == INDEX_NONE )
+	{
+		// Either we switched to a Savepoint in the middle of another level
+		// Or we tried to fast-forward the current level by dying and respawning at a further Savepoint already unlocked (but not re-reached since level-restart)
+		// Timer is not valid
+		SetCurrentLevel(None);
+	}
+}
+
+function SetGlobalTimerEnabled(bool bEnabled)
+{
+	bStopGlobal = !bEnabled;
+	if ( WorldInfo.NetMode == NM_Standalone )
+		ReplicatedEvent('bStopGlobal');
+}
+
+function SetCurrentLevel(TTLevel Level)
+{
+	CurrentLevel = Level;
 	if ( WorldInfo.NetMode == NM_Standalone )
 		ReplicatedEvent('CurrentLevel');
 }
@@ -214,8 +235,10 @@ reliable client function ClientSyncTimers(int LevelMillis, int GlobalMillis)
 
 simulated event ReplicatedEvent(Name VarName)
 {
-	if ( VarName == 'CurrentLevel' )
-		TTHud(GetALocalPlayerController().myHUD).bUpdateLevelboard = true;
+	if ( VarName == 'bStopGlobal' )
+		TTHud(GetALocalPlayerController().myHUD).GlobalTimerChanged(Self);
+	else if ( VarName == 'CurrentLevel' )
+		TTHud(GetALocalPlayerController().myHUD).LevelChanged(Self);
 	else
 		Super.ReplicatedEvent(VarName);
 }

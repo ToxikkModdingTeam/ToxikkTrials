@@ -7,26 +7,22 @@
 //================================================================
 class TTHud extends CRZHud;
 
-CONST BOARD_TITLEHEIGHT = 28;
-CONST BOARD_LINEHEIGHT = 24;
-CONST BOARD_PAD_Y = 12;
-CONST BOARD_PAD_X = 12;
-
 CONST COL_POS_WIDTH = 36;
 CONST COL_TIME_WIDTH = 120;
-CONST COL_POINTS_WIDTH = 40;
+CONST COL_POINTS_WIDTH = 48;
 CONST COL_PLAYERS_WIDTH = 200;
-var int RB_WIDTH;
 
-CONST COL_TOTAL_WIDTH = 64;
-CONST COL_NAME_WIDTH = 160;
-var int LB_WIDTH;
+CONST COL_TOTAL_WIDTH = 80;
+CONST COL_NAME_WIDTH = 140;
+
+CONST STANDING_TIME = 2.5;
 
 
 var GameViewportClient Viewport;
 var TTSpawnTree SpawnTree;
 var TTGRI GRI;
 var GUIRoot Root;
+
 
 struct sTimerGroup
 {
@@ -37,34 +33,30 @@ struct sTimerGroup
 var sTimerGroup GlobalTimer;
 var sTimerGroup LevelTimer;
 
-struct sBoardLine
-{
-	var GUIGroup grp;
-	var array<GUILabel> col;
-};
-struct sBoard
-{
-	var GUIGroup grp;
-	var GUILabel title;
-	var sBoardLine head;
-	var array<sBoardLine> line;
-};
-var sBoard Globalboard;
+
+var GUIBoard Globalboard;
 var bool bUpdateGlobalboard;
 
-var sBoard Levelboard;
+var GUIBoard Levelboard;
 var bool bUpdateLevelboard;
 
-var sBoard Leaderboard;
+var GUIBoard Leaderboard;
 var bool bUpdateLeaderboard;
+
+var Vector PreviousPos;
+var float TimeStanding;
+
+var enum eTTDisplayMode
+{
+	TTDM_Timers,
+	TTDM_Boards,
+	TTDM_Dead,
+} CurrentDisplayMode;
 
 
 simulated function PostBeginPlay()
 {
 	Super.PostBeginPlay();
-
-	RB_WIDTH = COL_POS_WIDTH + COL_TIME_WIDTH + COL_POINTS_WIDTH + COL_PLAYERS_WIDTH + 2*BOARD_PAD_X;
-	LB_WIDTH = COL_POS_WIDTH + COL_TOTAL_WIDTH + COL_NAME_WIDTH + 2*BOARD_PAD_X;
 
 	Viewport = LocalPlayer(PlayerOwner.Player).ViewportClient;
 	SpawnTree = TTSpawnTree(CreateInteraction(class'TTSpawnTree'));
@@ -100,28 +92,43 @@ function CreateElements(Canvas C)
 
 	CreateTimerGroup(C, LevelTimer, "- CURRENT LEVEL -", "top:112; right:100%-32; width:200; height:64");
 
-	CreateBoard(Globalboard, "- MAP TIME RANKS -", "top:192; right:100%-32; width:"$RB_WIDTH);
-	CreateRankLine(Globalboard.head, Globalboard.grp, -1, "RNK", "TIME", "PTS", "PLAYERS");
+	Globalboard = class'GUIBoard'.static.CreateBoard(Root, "- MAP TIME RANKS -");
+	Globalboard.SetPosAuto("right:100%-32; top:32");
+	Globalboard.AddColumn("RNK", COL_POS_WIDTH, ALIGN_CENTER);
+	Globalboard.AddColumn("TIME", COL_TIME_WIDTH, ALIGN_CENTER);
+	Globalboard.AddColumn("PTS", COL_POINTS_WIDTH, ALIGN_CENTER);
+	Globalboard.AddColumn("PLAYERS", COL_PLAYERS_WIDTH, ALIGN_LEFT);
 	bUpdateGlobalboard = true;
 
-	CreateBoard(Levelboard, "- CURRENT LEVEL RANKS -", "top:192; left:32; width:"$RB_WIDTH);
-	CreateRankLine(Levelboard.head, Levelboard.grp, -1, "RNK", "TIME", "PTS", "PLAYERS");
+	Levelboard = class'GUIBoard'.static.CreateBoard(Root, "- CURRENT LEVEL RANKS -");
+	Levelboard.SetPosAuto("right:100%-32; top:" $ (Root.CurTargetFloat(Globalboard.offY) + Root.CurTargetFloat(Globalboard.offH) + 16));
+	Levelboard.AddColumn("RNK", COL_POS_WIDTH, ALIGN_CENTER);
+	Levelboard.AddColumn("TIME", COL_TIME_WIDTH, ALIGN_CENTER);
+	Levelboard.AddColumn("PTS", COL_POINTS_WIDTH, ALIGN_CENTER);
+	Levelboard.AddColumn("PLAYERS", COL_PLAYERS_WIDTH, ALIGN_LEFT);
+	Levelboard.iData.AddItem(-1);
 	bUpdateLevelboard = true;
 
-	CreateBoard(Leaderboard, "- GLOBAL LEADERBOARD -", "bottom:80%; right:100%-32; width:"$LB_WIDTH);
-	CreatePlayerLine(Leaderboard.head, Leaderboard.grp, -1, "POS", "POINTS", "PLAYER");
+	Leaderboard = class'GUIBoard'.static.CreateBoard(Root, "- GLOBAL LEADERBOARD -");
+	Leaderboard.SetPosAuto("left:32; center-y:50%");
+	Leaderboard.AddColumn("POS", COL_POS_WIDTH, ALIGN_CENTER);
+	Leaderboard.AddColumn("TOTAL", COL_TOTAL_WIDTH, ALIGN_CENTER);
+	Leaderboard.AddColumn("PLAYER", COL_NAME_WIDTH, ALIGN_LEFT);
 	bUpdateLeaderboard = true;
+
+	SetDisplayMode(TTDM_Dead);
 }
 
 function CreateTimerGroup(Canvas C, out sTimerGroup Group, String Title, String PosAuto)
 {
 	Group.grp = class'GUIGroup'.static.CreateGroup(Root);
-	Group.grp.SetColors(MakeColor(0,0,0,128), Root.TRANSPARENT);
+	Group.grp.SetColors(class'GUIBoard'.default.BgColor.Val, Root.TRANSPARENT);
 	Group.grp.SetPosAuto(PosAuto);
 
 	Group.title = class'GUILabel'.static.CreateLabel(Group.grp, Title);
 	Group.title.SetPosAuto("top:8; center-x:50%; width:100%");
 	Group.title.SetTextAlign(ALIGN_CENTER, ALIGN_TOP);
+	Group.title.SetTextColor(MakeColor(32,180,255,255));
 
 	Group.timer = class'GUIlabel'.static.CreateLabel(Group.grp, FormatTrialTime(0));
 	Group.timer.SizeToFit(C);
@@ -129,225 +136,129 @@ function CreateTimerGroup(Canvas C, out sTimerGroup Group, String Title, String 
 	Group.timer.SetTextAlign(ALIGN_CENTER, ALIGN_TOP);
 }
 
-function CreateBoard(out sBoard Board, String Title, String PosAuto)
-{
-	Board.grp = class'GUIGroup'.static.CreateGroup(Root);
-	Board.grp.SetColors(MakeColor(0,0,0,128), Root.TRANSPARENT);
-	Board.grp.SetPosAuto(PosAuto);
-
-	Board.title = class'GUILabel'.static.CreateLabel(Board.grp, Title);
-	Board.title.SetPosAuto("center-x:50%; width:100%; top:"$BOARD_PAD_Y);
-	Board.title.SetTextAlign(ALIGN_CENTER, ALIGN_TOP);
-}
-
-function UpdateGlobalboard(Canvas C)
+function UpdateGlobalboard()
 {
 	local int i;
-	local String time;
-	local sBoardLine line;
+	local array<String> data;
 
-	// update existing lines
-	for ( i=0; i<Globalboard.line.Length; i++ )
-	{
-		time = "<"@FormatTrialTime(GRI.Globalboard[i].TimeRangeLimit);
-		if ( Globalboard.line[i].col[1].Text != time || Globalboard.line[i].col[3].Text != GRI.Globalboard[i].Players )
-		{
-			Globalboard.line[i].col[1].Text = time;
-			Globalboard.line[i].col[3].Text = GRI.Globalboard[i].Players;
-
-			FlashBoardLine(Globalboard.line[i].grp);
-		}
-	}
-
-	// create new lines
-	for ( i=i; i<GRI.GLOBALBOARD_SIZE; i++ )
+	data.Length = 4;
+	for ( i=0; i<GRI.GLOBALBOARD_SIZE; i++ )
 	{
 		if ( GRI.Globalboard[i].TimeRangeLimit <= 0 )
 			break;
 
-		CreateRankLine(line, Globalboard.grp, i,
-			Right("0"$(i+1)$".",3),
-			"<"@FormatTrialTime(GRI.Globalboard[i].TimeRangeLimit),
-			class'TTGame'.static.PointsForGlobalRank(i),
-			GRI.Globalboard[i].Players
-		);
+		data[0] = Right("0"$(i+1)$".",3);
+		data[1] = "<"@FormatTrialTime(GRI.Globalboard[i].TimeRangeLimit);
+		data[2] = ""$class'TTGame'.static.PointsForGlobalRank(i);
+		data[3] = GRI.Globalboard[i].Players;
 
-		Globalboard.line.Length = i+1;
-		Globalboard.line[i] = line;
-		FlashBoardLine(line.grp);
+		if ( Globalboard.lines.Length > i )
+			Globalboard.UpdateLine(i, data);
+		else
+		{
+			Globalboard.AddLine(data);
+			Levelboard.MoveTo("_", Root.CurTargetFloat(Globalboard.offY) + Root.CurTargetFloat(Globalboard.offH) + 16, "_", "_", 0.25, ANIM_EASE_IN);
+		}
 	}
-
-	RecalcBoardHeight(Globalboard);
 
 	bUpdateGlobalboard = false;
 }
 
-function UpdateLevelboard(Canvas C)
+function UpdateLevelboard()
 {
 	local TTPRI PRI;
-	local int i;
+	local int Idx, i;
+	local array<String> data;
 
 	PRI = TTPRI(PlayerOwner.PlayerReplicationInfo);
 	if ( PRI != None && PRI.CurrentLevel != None && GRI != None && PRI.CurrentLevel.LevelIdx < GRI.MAX_LEVELBOARDS )
 	{
+		Idx = PRI.CurrentLevel.LevelIdx;
+
 		// Just changed level - clear lines and rebuild the board
-		if ( Levelboard.title.Text != PRI.CurrentLevel.LevelDisplayName )
+		if ( Levelboard.iData[0] != Idx )
 		{
-			Levelboard.title.Text = PRI.CurrentLevel.LevelDisplayName;
-			for ( i=0; i<Levelboard.line.Length; i++ )
-				Levelboard.line[i].grp.RemoveFromParent();
-			Levelboard.line.Length = 0;
+			Levelboard.SetTitle(PRI.CurrentLevel.LevelDisplayName);
+			Levelboard.FlashColors(MakeColor(255,200,128,220), Levelboard.TRANSPARENT);
+			Levelboard.Empty();
 		}
 
-		// update board
-		Levelboard.grp.AlphaTo(1, 0.5, ANIM_LINEAR);
-		__UpdateLevelboard(C, PRI.CurrentLevel.LevelIdx);
+		data.Length = 4;
+		for ( i=0; i<GRI.LEVELBOARD_SIZE; i++ )
+		{
+			if ( GRI.Levelboard[Idx].Board[i].TimeRangeLimit <= 0 )
+				break;
+
+			data[0] = Right("0"$(i+1)$".",3);
+			data[1] = "<"@FormatTrialTime(GRI.Levelboard[Idx].Board[i].TimeRangeLimit);
+			data[2] = ""$class'TTGame'.static.PointsForLevelRank(i);
+			data[3] = GRI.Levelboard[Idx].Board[i].Players;
+
+			if ( Levelboard.lines.Length > i )
+				Levelboard.UpdateLine(i, data);
+			else
+				Levelboard.AddLine(data);
+
+			if ( CurrentDisplayMode != TTDM_Timers )
+				Levelboard.AlphaTo(1, 0.5, ANIM_EASE_IN);
+		}
 	}
 
 	// Not in a level - hide the board
 	else
-		Levelboard.grp.AlphaTo(0, 0.5, ANIM_LINEAR);
+		Levelboard.AlphaTo(0, 0.5, ANIM_EASE_OUT);
 
 	bUpdateLevelboard = false;
 }
 
-function __UpdateLevelboard(Canvas C, int Idx)
+function UpdateLeaderboard()
 {
 	local int i;
-	local String time;
-	local sBoardLine line;
+	local array<String> data;
 
-	// update existing lines
-	for ( i=0; i<Levelboard.line.Length; i++ )
-	{
-		time = "<"@FormatTrialTime(GRI.Levelboard[Idx].Board[i].TimeRangeLimit);
-		if ( Levelboard.line[i].col[1].Text != time || Levelboard.line[i].col[3].Text != GRI.Levelboard[Idx].Board[i].Players )
-		{
-			Levelboard.line[i].col[1].Text = time;
-			Levelboard.line[i].col[3].Text = GRI.Levelboard[Idx].Board[i].Players;
-			FlashBoardLine(Levelboard.line[i].grp);
-		}
-	}
-
-	// create new lines
-	for ( i=i; i<GRI.LEVELBOARD_SIZE; i++ )
-	{
-		if ( GRI.Levelboard[Idx].Board[i].TimeRangeLimit <= 0 )
-			break;
-
-		CreateRankLine(line, Levelboard.grp, i,
-			Right("0"$(i+1)$".",3),
-			"<"@FormatTrialTime(GRI.Levelboard[Idx].Board[i].TimeRangeLimit),
-			class'TTGame'.static.PointsForLevelRank(i),
-			GRI.Levelboard[Idx].Board[i].Players
-		);
-
-		Levelboard.line.Length = i+1;
-		Levelboard.line[i] = line;
-		FlashBoardLine(line.grp);
-	}
-
-	RecalcBoardHeight(Levelboard);
-}
-
-function UpdateLeaderboard(Canvas C)
-{
-	local int i;
-	local String pts;
-	local sBoardLine line;
-
-	// update existing lines
-	for ( i=0; i<Leaderboard.line.Length; i++ )
-	{
-		pts = String(GRI.Leaderboard[i].Points);
-		if ( Leaderboard.line[i].col[1].Text != pts || Leaderboard.line[i].col[2].Text != GRI.Leaderboard[i].Name )
-		{
-			Leaderboard.line[i].col[1].Text = pts;
-			Leaderboard.line[i].col[2].Text = GRI.Leaderboard[i].Name;
-			FlashBoardLine(Leaderboard.line[i].grp);
-		}
-	}
-
-	// create new lines
-	for ( i=i; i<GRI.LEADERBOARD_SIZE; i++ )
+	data.Length = 3;
+	for ( i=0; i<GRI.LEADERBOARD_SIZE; i++ )
 	{
 		if ( GRI.Leaderboard[i].Points <= 0 )
 			break;
 
-		CreatePlayerLine(line, Leaderboard.grp, i,
-			Right("0"$(i+1)$".", 3),
-			GRI.Leaderboard[i].Points,
-			GRI.Leaderboard[i].Name
-		);
+		data[0] = Right("0"$(i+1)$".", 3);
+		data[1] = ""$GRI.Leaderboard[i].Points;
+		data[2] = ""$GRI.Leaderboard[i].Name;
 
-		Leaderboard.line.Length = i+1;
-		Leaderboard.line[i] = line;
-		FlashBoardLine(Leaderboard.line[i].grp);
+		if ( Leaderboard.lines.Length > i )
+			Leaderboard.UpdateLine(i, data);
+		else
+			Leaderboard.AddLine(data);
 	}
-
-	RecalcBoardHeight(Leaderboard);
 
 	bUpdateLeaderboard = false;
 }
 
-static function CreateRankLine(out sBoardLine line, GUIGroup Parent, int Pos, String Rank, String Time, coerce String Points, String Players)
+function GlobalTimerChanged(TTPRI PRI)
 {
-	local int x;
-
-	Pos = Pos+1;    //shift because of head
-	line.grp = class'GUIGroup'.static.CreateGroup(Parent);
-	line.grp.SetPosAuto("center-x:50%; width:100%-"$(2*BOARD_PAD_X)$"; top:"$(BOARD_PAD_Y+BOARD_TITLEHEIGHT+Pos*BOARD_LINEHEIGHT)$"; height:"$BOARD_LINEHEIGHT);
-	line.grp.SetColors(line.grp.TRANSPARENT, MakeColor(255,255,255,32));
-
-	line.col.Length = 0;
-	x = 0;
-	AddColumn(line, x, Rank, COL_POS_WIDTH, ALIGN_CENTER);
-	AddColumn(line, x, Time, COL_TIME_WIDTH, ALIGN_CENTER);
-	AddColumn(line, x, Points, COL_POINTS_WIDTH, ALIGN_CENTER);
-	AddColumn(line, x, Players, COL_PLAYERS_WIDTH, ALIGN_LEFT);
+	if ( PRI.bStopGlobal && PRI.CurrentLevel == None && CurrentDisplayMode == TTDM_Timers )
+		SetDisplayMode(TTDM_Boards);
+	else if ( PRI.bStopGlobal )
+		GlobalTimer.grp.AlphaTo(0, 0.5, ANIM_EASE_OUT);
+	else if ( CurrentDisplayMode != TTDM_Boards )
+		GlobalTimer.grp.AlphaTo(1, 0.5, ANIM_EASE_IN);
 }
 
-static function CreatePlayerLine(out sBoardLine line, GUIGroup Parent, int Pos, String Rank, coerce String Total, String PlayerName)
+function LevelChanged(TTPRI PRI)
 {
-	local int x;
-
-	Pos = Pos+1;
-	line.grp = class'GUIGroup'.static.CreateGroup(Parent);
-	line.grp.SetPosAuto("center-x:50%; width:100%-"$(2*BOARD_PAD_X)$"; top:"$(BOARD_PAD_Y+BOARD_TITLEHEIGHT+Pos*BOARD_LINEHEIGHT)$"; height:"$BOARD_LINEHEIGHT);
-	line.grp.SetColors(line.grp.TRANSPARENT, MakeColor(255,255,255,32));
-
-	line.col.Length = 0;
-	x = 0;
-	AddColumn(line, x, Rank, COL_POS_WIDTH, ALIGN_CENTER);
-	AddColumn(line, x, Total, COL_TOTAL_WIDTH, ALIGN_CENTER);
-	AddColumn(line, x, PlayerName, COL_NAME_WIDTH, ALIGN_LEFT);
-}
-
-static function AddColumn(out sBoardLine line, out int x, String Text, int Width, eHorAlignment hAlign)
-{
-	local GUILabel lbl;
-
-	lbl = class'GUILabel'.static.CreateLabel(line.grp, Text);
-	lbl.SetPosAuto("center-y:50%; left:"$x$"; width:"$Width);
-	lbl.SetTextAlign(hAlign, ALIGN_MIDDLE);
-	line.col.AddItem(lbl);
-	x += Width;
-}
-
-static function FlashBoardLine(GUIGroup line)
-{
-	line.ColorsTo(MakeColor(255,200,128,220), line.BoxColor.Val, 0.2, ANIM_LINEAR);
-	line.QueueColors(line.TRANSPARENT, line.BoxColor.Val, 1.0, ANIM_LINEAR);
-}
-
-static function RecalcBoardHeight(out sBoard Board)
-{
-	if ( Board.line.Length > 0 )
-		Board.grp.SetPosAuto("height:" $ (Board.line[Board.line.Length-1].grp.offY.Val+BOARD_LINEHEIGHT+BOARD_PAD_Y));
+	if ( PRI.CurrentLevel != None )
+	{
+		LevelTimer.title.Text = PRI.CurrentLevel.LevelDisplayName;
+		LevelTimer.title.FlashColors(MakeColor(255,200,128,220), LevelTimer.title.TRANSPARENT);
+		if ( CurrentDisplayMode == TTDM_Timers )
+			LevelTimer.grp.AlphaTo(1, 0.5, ANIM_EASE_IN);
+	}
 	else
-		Board.grp.SetPosAuto("height:" $ (Board.head.grp.offY.Val+BOARD_LINEHEIGHT+BOARD_PAD_Y));
-}
+		LevelTimer.grp.AlphaTo(0, 0.5, ANIM_EASE_OUT);
 
+	bUpdateLevelboard = true;
+}
 
 simulated event Tick(float dt)
 {
@@ -357,8 +268,9 @@ simulated event Tick(float dt)
 
  	Super.Tick(dt);
 
-	//NOTE: fix-workaround for pawn landing issue (clientside-only)
 	P = UTPawn(PlayerOwner.Pawn);
+
+	//NOTE: fix-workaround for pawn landing issue (clientside-only)
 	if ( P != None && P.Physics == PHYS_Walking && P.MultiJumpRemaining < P.MaxMultiJump )
 		P.Landed(Vect(0,0,1), P.Base);
 
@@ -367,18 +279,72 @@ simulated event Tick(float dt)
 		PRI = TTPRI(PlayerOwner.PlayerReplicationInfo);
 		if ( PRI != None )
 		{
+			// Update timers time
 			Now = PRI.CurrentTimeMillis();
 			GlobalTimer.timer.Text = FormatTrialTime(Now - PRI.GlobalStartDate);
 			LevelTimer.timer.Text = FormatTrialTime(Now - PRI.LevelStartDate);
-			if ( PRI.CurrentLevel != None )
+
+			// Switch displaymodes
+			if ( P == None || P.IsInState('Dead') )
+				SetDisplayMode(TTDM_Dead);
+			else if ( PRI.bStopGlobal && PRI.CurrentLevel == None )
+				SetDisplayMode(TTDM_Boards);
+			else if ( P.Location == PreviousPos )
 			{
-				LevelTimer.title.Text = PRI.CurrentLevel.LevelDisplayName;
-				LevelTimer.grp.AlphaTo(1, 0.5, ANIM_LINEAR);
+				TimeStanding += dt;
+				if ( TimeStanding > STANDING_TIME )
+					SetDisplayMode(TTDM_Boards);
 			}
 			else
-				LevelTimer.grp.AlphaTo(0, 0.5, ANIM_LINEAR);
+			{
+				SetDisplayMode(TTDM_Timers);
+				TimeStanding = 0;
+				PreviousPos = P.Location;
+			}
 		}
 		Root.Tick(dt);
+	}
+}
+
+function SetDisplayMode(eTTDisplayMode Mode)
+{
+	local TTPRI PRI;
+
+	if ( CurrentDisplayMode == Mode )
+		return;
+	CurrentDisplayMode = Mode;
+
+	PRI = TTPRI(PlayerOwner.PlayerReplicationInfo);
+	Switch (Mode)
+	{
+		// normal state - show the two timers
+		case TTDM_Timers:
+			if ( PRI != None && !PRI.bStopGlobal ) GlobalTimer.grp.AlphaTo(1, 0.5, ANIM_EASE_IN);
+			if ( PRI != None && PRI.CurrentLevel != None ) LevelTimer.grp.AlphaTo(1, 0.5, ANIM_EASE_IN);
+			Globalboard.AlphaTo(0, 0.3, ANIM_EASE_OUT);
+			Levelboard.AlphaTo(0, 0.3, ANIM_EASE_OUT);
+			Leaderboard.AlphaTo(0, 0.3, ANIM_EASE_OUT);
+			break;
+
+		// standing still - hide timers and show boards
+		case TTDM_Boards:
+			GlobalTimer.grp.AlphaTo(0, 0.3, ANIM_EASE_OUT);
+			LevelTimer.grp.AlphaTo(0, 0.3, ANIM_EASE_OUT);
+			Globalboard.AlphaTo(1, 0.5, ANIM_EASE_IN);
+			if ( PRI != None && PRI.CurrentLevel != None ) Levelboard.AlphaTo(1, 0.5, ANIM_EASE_IN);
+			Leaderboard.AlphaTo(1, 0.5, ANIM_EASE_IN);
+			break;
+
+		// dead - hide level timer, show everything else
+		//TODO: move the things so Globalboard doesn't draw over GlobalTimer (same pos atm) (also must take cinebars and spawntree into account)
+		//TODO: show levelboard in real time when we select level in SpawnTree
+		case TTDM_Dead:
+			if ( PRI != None && !PRI.bStopGlobal ) GlobalTimer.grp.AlphaTo(1, 0.5, ANIM_EASE_IN);
+			LevelTimer.grp.AlphaTo(0, 0.3, ANIM_EASE_OUT);
+			Globalboard.AlphaTo(1, 0.5, ANIM_EASE_IN);
+			if ( PRI != None && PRI.CurrentLevel != None ) Levelboard.AlphaTo(1, 0.5, ANIM_EASE_IN);
+			Leaderboard.AlphaTo(1, 0.5, ANIM_EASE_IN);
+			break;
 	}
 }
 
@@ -391,11 +357,11 @@ event PostRender()
 	if ( Root != None )
 	{
 		if ( bUpdateGlobalboard )
-			UpdateGlobalboard(Canvas);
+			UpdateGlobalboard();
 		if ( bUpdateLevelboard )
-			UpdateLevelboard(Canvas);
+			UpdateLevelboard();
 		if ( bUpdateLeaderboard )
-			UpdateLeaderboard(Canvas);
+			UpdateLeaderboard();
 
 		Root.PostRender(Canvas);
 	}

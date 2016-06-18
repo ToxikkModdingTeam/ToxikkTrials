@@ -16,7 +16,13 @@ var(PointZero) TTSavepoint InitialPoint;
 simulated function Init(TTGRI GRI)
 {
 	if ( InitialPoint != None )
+	{
 		InitialPoint.bInitiallyAvailable = true;
+		NextPoints.AddItem(InitialPoint);
+		InitialPoint.PreviousPoints.AddItem(Self);
+	}
+	else
+		`Log("[Trials] WARNING - PointZero.InitialPoint is None");
 }
 
 event Touch(Actor Other, PrimitiveComponent OtherComp, vector HitLocation, vector HitNormal);
@@ -42,6 +48,7 @@ simulated function GlobalResetFor(CRZPawn P)
 	PRI.UnlockedSavepoints.Length = 0;  // relock all Savepoints
 	PRI.ValidatedObjectives.Length = 0; // invalidate all objectives
 	PRI.GlobalStartDate = PRI.CurrentTimeMillis();
+	PRI.SetGlobalTimerEnabled(true);
 }
 
 
