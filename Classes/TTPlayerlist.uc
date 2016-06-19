@@ -23,6 +23,9 @@ struct StrictConfig sPlayerData
 };
 var config array<sPlayerData> Player;
 
+/** Index map for sorted players list */
+var array<int> Sortmap;
+
 
 static function TTPlayerlist Load()
 {
@@ -30,7 +33,7 @@ static function TTPlayerlist Load()
 }
 
 /** Matches up PRI with stored player data (defines TTPRI.Idx) - creates new entry if not found */
-function InitPlayer(TTPRI PRI)
+function SyncPlayer(TTPRI PRI)
 {
 	local String UID;
 	local int i;
@@ -49,7 +52,35 @@ function InitPlayer(TTPRI PRI)
 	SaveConfig();   //TODO: rework the SaveConfig - maybe do it every minute?
 
 	Player[i].PRI = PRI;
+
 	PRI.Idx = i;
+	PRI.LeaderboardPos = Sortmap.Find(i);
+	PRI.TotalPoints = Player[i].TotalPoints;
+	PRI.MapPoints = 0;
+}
+
+function SortPlayers()
+{
+	local int i,k;
+
+	Sortmap.Length = Player.Length;
+	// Only sort players that have points
+	for ( i=0; i<Player.Length; i++ )
+	{
+		if ( Player[i].TotalPoints > 0 )
+		{
+			Sortmap[k] = i;
+			k++;
+		}
+	}
+	Sortmap.Length = k;
+
+	Sortmap.Sort(ComparePlayers);
+}
+
+function int ComparePlayers(int p1, int p2)
+{
+	return (Player[p1].TotalPoints - Player[p2].TotalPoints);
 }
 
 

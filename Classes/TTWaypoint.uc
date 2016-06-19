@@ -7,7 +7,7 @@
 // by Chatouille
 //================================================================
 class TTWaypoint extends Trigger
-	placeable
+	notplaceable
 	ClassGroup(Trials)
 	hidecategories(Mobile);
 

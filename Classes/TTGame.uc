@@ -17,9 +17,6 @@ var TTPlayerlist Playerlist;
 /** Server - holds current map's MapData instance */
 var TTMapData MapData;
 
-/** Server - Sortmap for Playerlist */
-var array<int> PlayerSortmap;
-
 
 //================================================
 // Initialization
@@ -447,6 +444,7 @@ function CheckGlobalTime(TTPRI PRI)
 	MapData.SaveConfig();
 
 	UpdateLeaderboard();
+	GRI.UpdatedGlobalboard();
 }
 
 static function int TimeRangeLimitForTime(int TimeMillis)
@@ -574,6 +572,7 @@ function CheckLevelTime(TTPRI PRI)
 	MapData.Levels[LevelIdx].SaveConfig();
 
 	UpdateLeaderboard();
+	GRI.UpdatedLevelboard(LevelIdx);
 }
 
 static function int PointsForLevelRank(int Rank)
@@ -586,31 +585,24 @@ function UpdateLeaderboard()
 {
 	local int i, k;
 
-	PlayerSortmap.Length = Playerlist.Player.Length;
-	for ( i=0; i<Playerlist.Player.Length; i++ )
-	{
-		if ( Playerlist.Player[i].TotalPoints > 0 )
-		{
-			PlayerSortmap[k] = i;
-			k++;
-		}
-	}
-	PlayerSortmap.Length = k;
+	Playerlist.SortPlayers();
 
-	PlayerSortmap.Sort(ComparePlayers);
-
-	for ( i=0; i<PlayerSortmap.Length && i<GRI.LEADERBOARD_SIZE; i++ )
+	for ( i=0; i<Min(Playerlist.Sortmap.Length,GRI.LEADERBOARD_SIZE); i++ )
 	{
-		GRI.Leaderboard[i].Name = Playerlist.Player[PlayerSortmap[i]].Name;
-		GRI.Leaderboard[i].Points = Playerlist.Player[PlayerSortmap[i]].TotalPoints;
+		k = Playerlist.Sortmap[i];
+		GRI.Leaderboard[i].Name = Playerlist.Player[k].Name;
+		GRI.Leaderboard[i].Points = Playerlist.Player[k].TotalPoints;
+		if ( Playerlist.Player[k].PRI != None )
+			Playerlist.Player[k].PRI.LeaderboardPos = i;
 	}
 	for ( i=i; i<GRI.LEADERBOARD_SIZE; i++ )
 		GRI.Leaderboard[i].Points = 0;
-}
-
-function int ComparePlayers(int p1, int p2)
-{
-	return (Playerlist.Player[p1].TotalPoints - Playerlist.Player[p2].TotalPoints);
+	for ( i=i; i<Playerlist.Sortmap.Length; i++ )
+	{
+		k = Playerlist.Sortmap[i];
+		if ( Playerlist.Player[k].PRI != None )
+			Playerlist.Player[k].PRI.LeaderboardPos = i;
+	}
 }
 
 
@@ -663,6 +655,11 @@ function DebugPrintWaypoint(TTWaypoint Wp, int Depth)
 
 	for ( i=0; i<Wp.NextPoints.Length; i++ )
 		DebugPrintWaypoint(Wp.NextPoints[i], Depth+1);
+}
+
+function bool IsDefaultWeapon(class<Weapon> WC)
+{
+	return (DefaultInventory.Find(WC) != INDEX_NONE);
 }
 
 

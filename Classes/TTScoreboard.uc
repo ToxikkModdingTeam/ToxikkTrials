@@ -43,11 +43,11 @@ function UpdateRow(out sb_Row PRow, CRZPlayerReplicationInfo CRZPRI)
 
 	UpdateField(PRow, "LVL", class'CRZHud'.static.FormatInteger(int(PRI.SkillClass), 2));
 
-	UpdateField(PRow, "GRANK", "N/A");
+	UpdateField(PRow, "GRANK", PRI.LeaderboardPos != -1 ? ("<font color='#FF0000'>" $ (PRI.LeaderboardPos+1) $ "</font>") : "N/A");
 
-	UpdateField(PRow, "TOTAL", "<font color='#FF0000'>" $ PRI.TotalPoints $ "</font>");
+	UpdateField(PRow, "TOTAL", PRI.TotalPoints != -1 ? ("<font color='#FF0000'>" $ PRI.TotalPoints $ "</font>") : "N/A");
 
-	UpdateField(PRow, "MAPPOINTS", "<font color='#FFFF00'>" $ PRI.MapPoints $ "</font>");
+	UpdateField(PRow, "MAPPOINTS", PRI.MapPoints != -1 ? ("<font color='#FFFF00'>" $ PRI.MapPoints $ "</font>") : "N/A");
 
 	UpdateField(PRow, "TIME", class'CRZHud'.static.FormatTime(FMax(0,CRZGameReplicationInfo(PRI.WorldInfo.GRI).GetElapsedTime() - PRI.StartTime)) );
 
@@ -63,7 +63,7 @@ defaultproperties
 	Columns.Add(( Name="CLAN",  Align=ALIGN_Left,   MinSize=3 ))
 	Columns.Add(( Name="LVL",   Align=ALIGN_Center, MinSize=2, bFieldsHTML=true ))
 
-	Columns.Add(( Name="GRANK", Align=ALIGN_Center, MinSize=3, bFieldsHTML=true, bHeadHTML=true, Title="<font color='#FF0000'>GP</font>" ))
+	Columns.Add(( Name="GRANK", Align=ALIGN_Center, MinSize=3, bFieldsHTML=true, bHeadHTML=true, Title="<font color='#FF0000'>GPOS</font>" ))
 	Columns.Add(( Name="TOTAL", Align=ALIGN_Center, MinSize=5, bFieldsHTML=true, bHeadHTML=true, Title="<font color='#FF0000'>TOTAL</font>" ))
 	Columns.Add(( Name="MAPPOINTS", Align=ALIGN_Center, MinSize=4, bFieldsHTML=true, bHeadHTML=true, Title="<font color='#FFFF00'>MAP</font>" ))
 

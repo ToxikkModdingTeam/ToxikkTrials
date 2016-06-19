@@ -93,7 +93,7 @@ function CreateElements(Canvas C)
 	CreateTimerGroup(C, LevelTimer, "- CURRENT LEVEL -", "top:112; right:100%-32; width:200; height:64");
 
 	Globalboard = class'GUIBoard'.static.CreateBoard(Root, "- MAP TIME RANKS -");
-	Globalboard.SetPosAuto("right:100%-32; top:32");
+	Globalboard.SetPosAuto("right:100%-32; top:112");
 	Globalboard.AddColumn("RNK", COL_POS_WIDTH, ALIGN_CENTER);
 	Globalboard.AddColumn("TIME", COL_TIME_WIDTH, ALIGN_CENTER);
 	Globalboard.AddColumn("PTS", COL_POINTS_WIDTH, ALIGN_CENTER);
@@ -128,7 +128,7 @@ function CreateTimerGroup(Canvas C, out sTimerGroup Group, String Title, String 
 	Group.title = class'GUILabel'.static.CreateLabel(Group.grp, Title);
 	Group.title.SetPosAuto("top:8; center-x:50%; width:100%");
 	Group.title.SetTextAlign(ALIGN_CENTER, ALIGN_TOP);
-	Group.title.SetTextColor(MakeColor(32,180,255,255));
+	Group.title.SetTextColor(class'GUIBoard'.default.TitleColor);
 
 	Group.timer = class'GUIlabel'.static.CreateLabel(Group.grp, FormatTrialTime(0));
 	Group.timer.SizeToFit(C);
@@ -336,7 +336,6 @@ function SetDisplayMode(eTTDisplayMode Mode)
 			break;
 
 		// dead - hide level timer, show everything else
-		//TODO: move the things so Globalboard doesn't draw over GlobalTimer (same pos atm) (also must take cinebars and spawntree into account)
 		//TODO: show levelboard in real time when we select level in SpawnTree
 		case TTDM_Dead:
 			if ( PRI != None && !PRI.bStopGlobal ) GlobalTimer.grp.AlphaTo(1, 0.5, ANIM_EASE_IN);

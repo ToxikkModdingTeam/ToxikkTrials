@@ -14,7 +14,7 @@ var GUIRoot Root;
 var bool bShow;
 var bool bRebuild;
 
-var GUIPanel Panel;
+var GUIGroup Panel;
 
 struct sTreeNode
 {
@@ -27,11 +27,14 @@ var array<sTreeNode> Nodes;
 var array<GUIGroup> Columns;
 
 //==== Style ====
+CONST PAD_X = 16;
+CONST PAD_Y = 12;
+CONST TOP_SPACING = 24;
+CONST NODE_SPACING = 48;
+CONST ROW_HEIGHT = 64;
 var const Color COLOR_SELECTED, COLOR_LOCKED;
 var const Color COLOR_AVAILABLE, COLOR_UNAVAILABLE, COLOR_TO_UNAVAILABLE;
-var const Vector PANEL_PADDING;
-var const int NODE_SPACING;
-var const int ROW_HEIGHT;
+var int TREE_Y;
 
 function Initialized()
 {
@@ -47,7 +50,8 @@ function Initialized()
 function bool BuildSpawnTree(Canvas C)
 {
 	local TTGRI GRI;
-	local int Row, i, w, h;
+	local GUILabel Title;
+	local int Row, i, bottom, x;
 	local Vector2D s;
 
 	`Log("[D] BUILD SPAWN TREE");
@@ -60,33 +64,40 @@ function bool BuildSpawnTree(Canvas C)
 	Nodes.Length = 0;
 	Columns.Length = 0;
 
-	Panel = class'GUIPanel'.static.CreatePanel(Root, "Spawn Tree", Root);
+	Panel = class'GUIGroup'.static.CreateGroup(Root);
 	Panel.SetPosAuto("center-x:50%; center-y:50%");
-	Panel.Content.OnDraw = OnDrawPanelContent;
-	Panel.bCaptureMouse = false;
+	Panel.SetColors(class'GUIBoard'.default.BgColor.Val, Panel.TRANSPARENT);
+	Panel.OnDraw = OnDrawPanelBackground;
+
+	Title = class'GUILabel'.static.CreateLabel(Panel, "- SPAWN TREE -");
+	Title.SetPosAuto("center-x:50%; width:100%; top:" $ PAD_Y);
+	Title.SetTextAlign(ALIGN_CENTER, ALIGN_TOP);
+	Title.SetTextColor(class'GUIBoard'.default.TitleColor);
+
+	s = Title.GetIntrinsicSize(C);
+	TREE_Y = Title.offY.Val + s.Y + TOP_SPACING;
 
 	Row = 0;
 	BuildTreeNodes(C, INDEX_NONE, GRI.PointZero, 0, Row);
 	UpdateButtons();
 
-	h = 0;
+	bottom = TREE_Y;
 	for ( i=0; i<Nodes.Length; i++ )
 	{
 		Columns[Nodes[i].Depth].offW.Val = Max(Nodes[i].btn.offW.Val, Columns[Nodes[i].Depth].offW.Val);
-		h = Max(Nodes[i].btn.offY.Val + Nodes[i].btn.offH.Val, h);
+		bottom = Max(Nodes[i].btn.offY.Val + Nodes[i].btn.offH.Val, bottom);
 	}
 
-	w = PANEL_PADDING.X;
+	x = PAD_X;
 	for ( i=0; i<Columns.Length; i++ )
 	{
 		if ( i > 0 )
-			w += NODE_SPACING;
-		Columns[i].SetPosAuto("left:" $ w);
-		w += Columns[i].offW.Val;
+			x += NODE_SPACING;
+		Columns[i].SetPosAuto("left:" $ x);
+		x += Columns[i].offW.Val;
 	}
 
-	s = Panel.TitleBar.GetIntrinsicSize(C);
-	Panel.SetPosAuto("width:" $ Max(w+PANEL_PADDING.X, s.X) $ "; height:" $ (s.Y + h + PANEL_PADDING.Z));
+	Panel.SetPosAuto("width:" $ Max(x+PAD_X, s.X+2*PAD_X) $ "; height:" $ (bottom + PAD_Y));
 
 	bRebuild = false;
 	return true;
@@ -108,7 +119,7 @@ function BuildTreeNodes(Canvas C, int ParentIdx, TTWaypoint Cur, int Depth, out 
 			if ( Depth < Nodes[i].Depth )
 			{
 				Nodes[i].Row = Row;
-				Nodes[i].btn.SetPosAuto("top:" $ (PANEL_PADDING.Y + Row*ROW_HEIGHT));
+				Nodes[i].btn.SetPosAuto("top:" $ (TREE_Y + Row*ROW_HEIGHT));
 
 				Columns[Depth].AddChild(Nodes[i].btn);
 				if ( Columns[Nodes[i].Depth].Children.Length == 0 )
@@ -122,7 +133,7 @@ function BuildTreeNodes(Canvas C, int ParentIdx, TTWaypoint Cur, int Depth, out 
 			if ( Depth == Columns.Length )
 			{
 				Columns.Length = Depth+1;
-				Columns[Depth] = class'GUIGroup'.static.CreateGroup(Panel.Content);
+				Columns[Depth] = class'GUIGroup'.static.CreateGroup(Panel);
 				Columns[Depth].SetPosAuto("left:0; top:0; width:0; height:100%");
 			}
 
@@ -133,7 +144,7 @@ function BuildTreeNodes(Canvas C, int ParentIdx, TTWaypoint Cur, int Depth, out 
 			Nodes[i].Row = Row;
 			Nodes[i].btn = class'GUIButton'.static.CreateButton(Columns[Depth], Sp.SpawnTreeLabel, OnSelectNode);
 			Nodes[i].btn.iData.AddItem(i);
-			Nodes[i].btn.SetPosAuto("center-x:40%; top:" $ (PANEL_PADDING.Y + Row*ROW_HEIGHT));
+			Nodes[i].btn.SetPosAuto("center-x:50%; top:" $ (TREE_Y + Row*ROW_HEIGHT));
 			Nodes[i].btn.OnDraw = OnDrawNode;
 			Nodes[i].btn.SizeToFit(C);
 			//make buttons work on right-click, left-click is caught by Root to respawn
@@ -211,9 +222,11 @@ function OnSelectNode(GUIButton elem)
 }
 
 // draw lines between nodes (center to center, buttons will be drawn over)
-function OnDrawPanelContent(GUIGroup elem, Canvas C)
+function OnDrawPanelBackground(GUIGroup elem, Canvas C)
 {
 	local int i, j, k;
+
+	elem.InternalOnDraw(elem, C);
 
 	for ( i=0; i<Nodes.Length; i++ )
 	{
@@ -260,30 +273,34 @@ function OnDrawNode(GUIGroup elem, Canvas C)
 
 event Tick(float dt)
 {
+/*
 	if ( PC != None && PC.IsInState('Dead') && !PRI.bHasCS )
 	{
 		if ( !bShow )
 			Show(true);
-		else if ( !Viewport.bDisplayHardwareMouseCursor )
-			Viewport.SetHardwareMouseCursorVisibility(true);
+		//else if ( !Viewport.bDisplayHardwareMouseCursor )
+			//Viewport.SetHardwareMouseCursorVisibility(true);
 
 		Root.Tick(dt);
 	}
 	else if ( bShow )
 		Show(false);
+*/
+	if ( Root != None )
+		Root.Tick(dt);
 }
 
 function Show(bool newShow)
 {
 	bShow = newShow;
-	Viewport.SetHardwareMouseCursorVisibility(bShow);
+	//Viewport.SetHardwareMouseCursorVisibility(bShow);
 	if ( bShow )
 	{
 		UpdateButtons();
-		Root.AlphaTo(1.0, 0.5, ANIM_EASE_IN);
+		Root.AlphaTo(1, 0.5, ANIM_EASE_IN);
 	}
 	else
-		Root.SetAlpha(0.0);
+		Root.AlphaTo(0, 0.3, ANIM_EASE_OUT);
 }
 
 event PostRender(Canvas C)
@@ -320,8 +337,17 @@ function NotifyGameSessionEnded()
 {
 	Super.NotifyGameSessionEnded();
 
+	Free();
+}
+
+function Free()
+{
+	Nodes.Length = 0;
 	if ( bShow ) 
 		Show(false);
+	if ( Root != None )
+		Root.Free();
+	Root = None;
 }
 
 defaultproperties
@@ -331,9 +357,6 @@ defaultproperties
 	COLOR_AVAILABLE=(R=32,G=220,B=32,A=255)
 	COLOR_UNAVAILABLE=(R=128,G=128,B=128,A=255)
 	COLOR_TO_UNAVAILABLE=(R=255,G=255,B=255,A=255)
-	PANEL_PADDING=(X=16,Y=12,Z=12)
-	NODE_SPACING=48
-	ROW_HEIGHT=64
 
 	bRebuild=true
 	OnReceivedNativeInputKey=OnKey

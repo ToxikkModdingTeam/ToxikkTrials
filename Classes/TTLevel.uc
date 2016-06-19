@@ -8,7 +8,8 @@
 // ----------------
 // by Chatouille
 //================================================================
-class TTLevel extends TTSavepoint;
+class TTLevel extends TTSavepoint
+	placeable;
 
 /** Shows up in the level-timer hud box */
 var(Level) String LevelDisplayName;

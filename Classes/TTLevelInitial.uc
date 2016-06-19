@@ -6,6 +6,7 @@
 // by Chatouille
 //================================================================
 class TTLevelInitial extends TTLevel
+	placeable
 	hidecategories(HUD,Trigger,Collision);
 
 defaultproperties

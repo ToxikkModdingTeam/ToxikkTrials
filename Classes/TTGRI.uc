@@ -80,6 +80,9 @@ simulated function PostBeginPlay()
 		FindPointZero();
 		CheckReachability();
 	}
+
+	if ( WorldInfo.NetMode != NM_DedicatedServer )
+		WaitForLocalPC();
 }
 
 simulated function BuildPointsList()
@@ -175,6 +178,46 @@ function CheckReachability()
 	}
 }
 
+
+//NOTE: This is temporary bullshit until we get to this
+function UpdatedGlobalboard()
+{
+	if ( WorldInfo.NetMode == NM_Standalone )
+	{
+		ReplicatedEvent('Globalboard');
+		ReplicatedEvent('Leaderboad');
+	}
+}
+
+function UpdatedLevelboard(int LevelIdx)
+{
+	if ( WorldInfo.NetMode == NM_Standalone )
+	{
+		ReplicatedEvent('Levelboard');
+		ReplicatedEvent('Leaderboad');
+	}
+}
+
+
+/** This is really bullshit... */
+simulated function WaitForLocalPC()
+{
+	local PlayerController PC;
+
+	PC = GetALocalPlayerController();
+	if ( PC != None )
+		InitClientStuff(PC);
+	else
+		SetTimer(0.1, false, GetFuncName());
+}
+
+simulated function InitClientStuff(PlayerController PC)
+{
+	local TTRacingHellraiserTarget HRTarget;
+
+	foreach WorldInfo.AllActors(class'TTRacingHellraiserTarget', HRTarget)
+		PC.myHUD.AddPostRenderedActor(HRTarget);
+}
 
 simulated event ReplicatedEvent(Name VarName)
 {

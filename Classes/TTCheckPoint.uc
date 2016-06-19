@@ -59,16 +59,22 @@ function ModifyPlayer(CRZPawn P)
 	if ( bModifyWeapons )
 	{
 		foreach P.InvManager.InventoryActors(class'UTWeapon', W)
-			P.InvManager.RemoveFromInventory(W);
+		{
+			if ( ! TTGame(WorldInfo.Game).IsDefaultWeapon(W.Class) )
+				P.InvManager.RemoveFromInventory(W);
+		}
 
 		for ( i=0; i<ForcedWeapons.Length; i++ )
 		{
 			W = Spawn(ForcedWeapons[i].WeaponClass, P);
 			if ( W != None )
 			{
-				if ( W.MaxAmmoCount < ForcedWeapons[i].AmmoCount )
-					W.MaxAmmoCount = ForcedWeapons[i].AmmoCount;
-				W.AmmoCount = ForcedWeapons[i].AmmoCount;
+				if ( ForcedWeapons[i].AmmoCount > 0 )
+				{
+					if ( W.MaxAmmoCount < ForcedWeapons[i].AmmoCount )
+						W.MaxAmmoCount = ForcedWeapons[i].AmmoCount;
+					W.AmmoCount = ForcedWeapons[i].AmmoCount;
+				}
 
 				W.GiveTo(P);
 			}

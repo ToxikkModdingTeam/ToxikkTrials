@@ -47,6 +47,8 @@ var array<TTObjective> ValidatedObjectives;
 /** Server - index of player in Playerlist */
 var int Idx;
 
+/** Server Replicated - Global position of player (leaderboard) */
+var int LeaderboardPos;
 /** Server Replicated - Total points of player */
 var int TotalPoints;
 /** Server Replicated - Map points of player */
@@ -80,9 +82,14 @@ simulated function PostBeginPlay()
 function WaitForPlayerData()
 {
 	local UniqueNetId ZeroId;
+	local TTGame Game;
 
 	if ( PlayerName != "" && UniqueId != ZeroId )
-		TTGame(WorldInfo.Game).Playerlist.InitPlayer(Self);
+	{
+		Game = TTGame(WorldInfo.Game);
+		Game.Playerlist.SyncPlayer(Self);
+		MapPoints = Game.MapData.MapPointsForPlayer(Idx);
+	}
 	else
 		SetTimer(0.1, false, GetFuncName());
 }
@@ -247,4 +254,7 @@ simulated event ReplicatedEvent(Name VarName)
 defaultproperties
 {
 	Idx=-1
+	LeaderboardPos=-1
+	TotalPoints=-1
+	MapPoints=-1
 }

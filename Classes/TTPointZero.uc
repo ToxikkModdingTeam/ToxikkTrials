@@ -7,6 +7,7 @@
 // by Chatouille
 //================================================================
 class TTPointZero extends TTSavepoint
+	placeable
 	hidecategories(Savepoint,Checkpoint,Waypoint,HUD,Trigger,Collision);
 
 /** Either a TTLevel or a TTSavepoint, depending on whether map starts starts in a level */

@@ -7,7 +7,8 @@
 // ----------------
 // by Chatouille
 //================================================================
-class TTSavepoint extends TTCheckpoint;
+class TTSavepoint extends TTCheckpoint
+	placeable;
 
 var(Savepoint) array<PlayerStart> Respawns;
 var(Savepoint) String SpawnTreeLabel;   //TBD: should the SpawnTree have Savepoints (=midlevel) or only SubObjectives (=levelstart) ???

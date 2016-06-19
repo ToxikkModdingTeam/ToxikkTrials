@@ -26,6 +26,7 @@ var array<int> ColPosX;
 var array<int> ColSize;
 var array<eHorAlignment> ColAlign;
 
+var editconst Color TitleColor;
 var Color HeadTextColor;
 
 
@@ -40,7 +41,7 @@ static function GUIBoard CreateBoard(optional GUIGroup _Parent=None, optional St
 	Board.l_title = class'GUILabel'.static.CreateLabel(Board, Title);
 	Board.l_title.SetPosAuto("center-x:50%; width:100%; top:"$PAD_Y);
 	Board.l_title.SetTextAlign(ALIGN_CENTER, ALIGN_TOP);
-	Board.l_title.SetTextColor(MakeColor(32,180,255,255));
+	Board.l_title.SetTextColor(Board.TitleColor);
 
 	Board.head.grp = class'GUIGroup'.static.CreateGroup(Board);
 	Board.head.grp.SetPosAuto("center-x:50%; width:100%-"$(2*PAD_X)$"; top:"$(PAD_Y+TITLE_HEIGHT)$"; height:"$LINE_HEIGHT);
@@ -148,5 +149,6 @@ private function GUILabel CreateElem(GUIGroup _Parent, int c, String Text)
 defaultproperties
 {
 	BgColor=(Val=(R=0,G=0,B=0,A=160))
+	TitleColor=(R=32,G=180,B=255,A=255)
 	HeadTextColor=(R=255,G=160,B=0,A=255)
 }

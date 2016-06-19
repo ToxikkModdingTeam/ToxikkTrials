@@ -8,6 +8,7 @@
 // by Chatouille
 //================================================================
 class TTObjective extends TTLevel
+	placeable
 	hidecategories(/*Waypoint,*/Checkpoint,Savepoint,Level);
 
 

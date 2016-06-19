@@ -49,6 +49,27 @@ static function TTMapData Load(String MapName, optional int CalculatedNumLevels=
 	return MapData;
 }
 
+function int MapPointsForPlayer(int Idx)
+{
+	local int i,j;
+	local int Total;
+
+	Total = 0;
+
+	i = GlobalRecord.Find('PlayerIdx', Idx);
+	if ( i != INDEX_NONE )
+		Total += class'TTGame'.static.PointsForGlobalRank(GlobalRecord[i].Rank);
+
+	for ( i=0; i<Levels.Length; i++ )
+	{
+		j = Levels[i].Record.Find('PlayerIdx', Idx);
+		if ( j != INDEX_NONE )
+			Total += class'TTGame'.static.PointsForLevelRank(Levels[i].Record[j].Rank);
+	}
+
+	return Total;
+}
+
 
 defaultproperties
 {
