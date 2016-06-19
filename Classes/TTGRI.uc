@@ -110,7 +110,7 @@ simulated function BuildPointsList()
 		AllPoints[i].Init(Self);
 }
 
-function int CompareLevelPoints(TTLevel P1, TTLevel P2)
+static simulated function int CompareLevelPoints(TTLevel P1, TTLevel P2)
 {
 	if ( int(P1.Location.X) == int(P2.Location.X) )
 	{
@@ -201,6 +201,7 @@ simulated function InitClientStuff(PlayerController PC)
 //TODO: find a way to tell WHICH Levelboard was replicated...
 simulated event ReplicatedEvent(Name VarName)
 {
+	`Log("[D] GRI ReplicatedEvent" @ VarName);
 	if ( VarName == 'Globalboard' )
 		TTHud(GetALocalPlayerController().myHUD).bUpdateGlobalboard = true;
 	else if ( VarName == 'Levelboard' )

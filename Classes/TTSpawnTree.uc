@@ -348,6 +348,7 @@ function Free()
 	if ( Root != None )
 		Root.Free();
 	Root = None;
+	PRI = None;
 }
 
 defaultproperties

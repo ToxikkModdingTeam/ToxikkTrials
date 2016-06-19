@@ -88,8 +88,6 @@ simulated function WaitForLocalPC()
 {
 	local PlayerController PC;
 
-	`Log("[D] WAIT FOR LOCAL PC"@Name);
-
 	PC = GetALocalPlayerController();
 	if ( PC != None )
 		FoundLocalPC(PC);
@@ -99,7 +97,6 @@ simulated function WaitForLocalPC()
 
 simulated function FoundLocalPC(PlayerController PC)
 {
-	`Log("[D] FOUND LOCAL PC"@Name);
 	PC.myHUD.AddPostRenderedActor(Self);
 }
 
