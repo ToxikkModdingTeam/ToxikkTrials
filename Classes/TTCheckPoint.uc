@@ -32,19 +32,21 @@ var(Checkpoint) array<sForcedInv> ForcedInventory;
 
 
 /** Called by the gamemode */
-simulated function ReachedBy(CRZPawn P)
+simulated function ReachedBy(TTPRI PRI)
 {
-	NotifyPlayer(P);
-	UpdatePlayerTargets(P);
-	ModifyPlayer(P);
+	NotifyPlayer(PRI);
+	UpdatePlayerTargets(PRI);
+	ModifyPlayer(PRI);
 }
 
-function ModifyPlayer(CRZPawn P)
+function ModifyPlayer(TTPRI PRI)
 {
+	local CRZPawn P;
 	local UTWeapon W;
 	local UTInventory Inv;
 	local int i;
 
+	P = CRZPawn(Controller(PRI.Owner).Pawn);
 	if ( P == None )
 		return;
 

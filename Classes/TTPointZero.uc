@@ -35,17 +35,14 @@ function NavigationPoint FindStartSpot(Controller Player)
 }
 
 /** Called by the gamemode */
-simulated function RespawnPlayer(CRZPawn P)
+simulated function RespawnPlayer(TTPRI PRI)
 {
-	GlobalResetFor(P);
-	InitialPoint.RespawnPlayer(P);
+	GlobalResetFor(PRI);
+	InitialPoint.RespawnPlayer(PRI);
 }
 
-simulated function GlobalResetFor(CRZPawn P)
+simulated function GlobalResetFor(TTPRI PRI)
 {
-	local TTPRI PRI;
-
-	PRI = TTPRI(P.PlayerReplicationInfo);
 	PRI.UnlockedSavepoints.Length = 0;  // relock all Savepoints
 	PRI.ValidatedObjectives.Length = 0; // invalidate all objectives
 	PRI.GlobalStartDate = PRI.CurrentTimeMillis();

@@ -19,37 +19,36 @@ var(Savepoint) String UnlockString;
 
 
 /** Called by the gamemode */
-simulated function ReachedBy(CRZPawn P)
+simulated function ReachedBy(TTPRI PRI)
 {
-	SetRespawnPointFor(P);
-	NotifyPlayer(P);
-	UpdatePlayerTargets(P);
-	ModifyPlayer(P);
+	SetRespawnPointFor(PRI);
+	NotifyPlayer(PRI);
+	UpdatePlayerTargets(PRI);
+	ModifyPlayer(PRI);
 }
 
-simulated function SetRespawnPointFor(CRZPawn P)
+simulated function SetRespawnPointFor(TTPRI PRI)
 {
-	local TTPRI PRI;
-
-	PRI = TTPRI(P.PlayerReplicationInfo);
-
 	// unlock spawnpoint if necessary
 	if ( !bInitiallyAvailable && PRI.UnlockedSavepoints.Find(Self) == INDEX_NONE )
 	{
 		PRI.UnlockedSavepoints.AddItem(Self);
 
-		if ( GetALocalPlayerController() == P.Controller && TTHud(PlayerController(P.Controller).myHUD) != None )
+		if ( PRI.IsLocalPlayerPRI() && TTHud(PlayerController(PRI.Owner).myHUD) != None )
 		{
 			if ( UnlockString != "" )
-				CRZHud(PlayerController(P.Controller).myHUD).LocalizedCRZMessage(class'TTWaypointMessage', P.PlayerReplicationInfo, None, UnlockString, 0, Self);
+				CRZHud(PlayerController(PRI.Owner).myHUD).LocalizedCRZMessage(class'TTWaypointMessage', PRI, None, UnlockString, 0, Self);
 
-			TTHud(PlayerController(P.Controller).myHUD).SpawnTree.UpdateButtons();
+			//TTHud(PlayerController(PRI.Owner).myHUD).SpawnTree.UpdateButtons();
 		}
 	}
 	if ( PRI.LevelReachedSavepoints.Find(Self) == INDEX_NONE )
 		PRI.LevelReachedSavepoints.AddItem(Self);
 
 	PRI.SetSpawnPoint(Self);
+
+	if ( Role < ROLE_Authority )    // fix for non-replication issue LVL1 => PointZero => LVL1 
+		PRI.SpawnPoint = Self;
 }
 
 /** Called by the gamemode */
@@ -64,17 +63,17 @@ function NavigationPoint FindStartSpot(Controller Player)
 }
 
 /** Called by the gamemode */
-simulated function RespawnPlayer(CRZPawn P)
+simulated function RespawnPlayer(TTPRI PRI)
 {
-	ClearPlayerTargets(P);
-	UpdatePlayerTargets(P);
-	ModifyPlayer(P);
-	SetRespawnPointFor(P);
+	ClearPlayerTargets(PRI);
+	UpdatePlayerTargets(PRI);
+	ModifyPlayer(PRI);
+	SetRespawnPointFor(PRI);
 }
 
-simulated function ClearPlayerTargets(CRZPawn P)
+simulated function ClearPlayerTargets(TTPRI PRI)
 {
-	TTPRI(P.PlayerReplicationInfo).TargetWp.Length = 0;
+	PRI.TargetWp.Length = 0;
 }
 
 

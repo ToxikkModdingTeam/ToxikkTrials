@@ -178,27 +178,6 @@ function CheckReachability()
 	}
 }
 
-
-//NOTE: This is temporary bullshit until we get to this
-function UpdatedGlobalboard()
-{
-	if ( WorldInfo.NetMode == NM_Standalone )
-	{
-		ReplicatedEvent('Globalboard');
-		ReplicatedEvent('Leaderboad');
-	}
-}
-
-function UpdatedLevelboard(int LevelIdx)
-{
-	if ( WorldInfo.NetMode == NM_Standalone )
-	{
-		ReplicatedEvent('Levelboard');
-		ReplicatedEvent('Leaderboad');
-	}
-}
-
-
 /** This is really bullshit... */
 simulated function WaitForLocalPC()
 {
@@ -219,10 +198,9 @@ simulated function InitClientStuff(PlayerController PC)
 		PC.myHUD.AddPostRenderedActor(HRTarget);
 }
 
+//TODO: find a way to tell WHICH Levelboard was replicated...
 simulated event ReplicatedEvent(Name VarName)
 {
-	`Log("[D] GRI ReplicatedEvent: " $ String(VarName));	//TODO: See how static array repnotifies
-
 	if ( VarName == 'Globalboard' )
 		TTHud(GetALocalPlayerController().myHUD).bUpdateGlobalboard = true;
 	else if ( VarName == 'Levelboard' )

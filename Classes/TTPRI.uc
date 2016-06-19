@@ -121,14 +121,14 @@ function SetSpawnPoint(TTSavepoint Sp)
 function SetGlobalTimerEnabled(bool bEnabled)
 {
 	bStopGlobal = !bEnabled;
-	if ( WorldInfo.NetMode == NM_Standalone )
+	if ( WorldInfo.NetMode == NM_Standalone || WorldInfo.NetMode == NM_ListenServer )
 		ReplicatedEvent('bStopGlobal');
 }
 
 function SetCurrentLevel(TTLevel Level)
 {
 	CurrentLevel = Level;
-	if ( WorldInfo.NetMode == NM_Standalone )
+	if ( WorldInfo.NetMode == NM_Standalone || WorldInfo.NetMode == NM_ListenServer )
 		ReplicatedEvent('CurrentLevel');
 }
 
@@ -140,29 +140,21 @@ reliable server function ServerPickSpawnPoint(TTSavepoint Sp, bool bLock=false)
 	WorldInfo.Game.RestartPlayer(Controller(Owner));
 }
 
-reliable client function ClientReachedWaypoint(CRZPawn P, TTWaypoint Wp)
+reliable client function ClientReachedWaypoint(TTWaypoint Wp)
 {
 	if ( WorldInfo.NetMode == NM_Client )
-		Wp.ReachedBy(P);
+		Wp.ReachedBy(Self);
 }
 
-reliable client function ClientSpawnedAtPoint(CRZPawn P, TTSavepoint Sp)
+reliable client function ClientSpawnedAtPoint(TTSavepoint Sp)
 {
 	if ( WorldInfo.NetMode == NM_Client )
-		Sp.RespawnPlayer(P);
+		Sp.RespawnPlayer(Self);
 }
 
 reliable server function ServerPlaceCustomSpawn()
 {
 	local CRZPawn P;
-
-	/*
-	if ( ! TRGame(WorldInfo.Game).bAllowCustomSpawns )
-	{
-		PlayerController(Owner).ReceiveLocalizedMessage(class'TRCustomSpawnMessage', 3);
-		return;
-	}
-	*/
 
 	if ( UTPlayerController(Owner) != None )
 	{
@@ -203,7 +195,7 @@ reliable server function ServerRemoveCustomSpawn()
 	TTGame(WorldInfo.Game).CheckPlayerObjClearance(Self);
 }
 
-function int CurrentTimeMillis()
+simulated function int CurrentTimeMillis()
 {
 	// GetSystemTime ???
 	return FFloor(WorldInfo.TimeSeconds*1000.f);
@@ -224,7 +216,7 @@ reliable client function ClientSyncTimers(int LevelMillis, int GlobalMillis)
 	Now = CurrentTimeMillis() - FFloor(ExactPing*1000.f);
 
 	EstimatedLevelStart = Now - LevelMillis;
-	if ( Abs(EstimatedLevelStart - LevelStartDate) > 100 )
+	if ( Abs(EstimatedLevelStart - LevelStartDate) > 200 )
 	{
 		`Log("[Trials] Correcting LEVEL timer" @ LevelStartDate @ "=>" @ EstimatedLevelStart @ "(" $ (EstimatedLevelStart - LevelStartDate) $ ")");
 		// pick middleground
@@ -232,7 +224,7 @@ reliable client function ClientSyncTimers(int LevelMillis, int GlobalMillis)
 	}
 
 	EstimatedGlobalStart = Now - GlobalMillis;
-	if ( Abs(EstimatedGlobalStart - GlobalStartDate) > 100 )
+	if ( Abs(EstimatedGlobalStart - GlobalStartDate) > 200 )
 	{
 		`Log("[Trials] Correcting GLOBAL timer" @ GlobalStartDate @ "=>" @ EstimatedGlobalStart @ "(" $ (EstimatedGlobalStart - GlobalStartDate) $ ")");
 		// pick middleground

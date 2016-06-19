@@ -157,7 +157,7 @@ function UpdateGlobalboard()
 		else
 		{
 			Globalboard.AddLine(data);
-			Levelboard.MoveTo("_", Root.CurTargetFloat(Globalboard.offY) + Root.CurTargetFloat(Globalboard.offH) + 16, "_", "_", 0.25, ANIM_EASE_IN);
+			Levelboard.MoveToAuto("y:" $ (Root.CurTargetFloat(Globalboard.offY) + Root.CurTargetFloat(Globalboard.offH) + 16), 0.25, ANIM_EASE_IN);
 		}
 	}
 
@@ -247,6 +247,9 @@ function GlobalTimerChanged(TTPRI PRI)
 
 function LevelChanged(TTPRI PRI)
 {
+	if ( Root == None )
+		return;
+
 	if ( PRI.CurrentLevel != None )
 	{
 		LevelTimer.title.Text = PRI.CurrentLevel.LevelDisplayName;

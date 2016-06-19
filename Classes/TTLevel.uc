@@ -19,53 +19,42 @@ var int LevelIdx;
 
 
 /** Called by the gamemode */
-simulated function ReachedBy(CRZPawn P)
+simulated function ReachedBy(TTPRI PRI)
 {
-	NotifyPlayer(P);
-	CheckLevelTime(P);
-	SetRespawnPointFor(P);
-	UpdatePlayerTargets(P);
-	ModifyPlayer(P);
-	ResetLevelTimerFor(P);
+	NotifyPlayer(PRI);
+	CheckLevelTime(PRI);
+	SetRespawnPointFor(PRI);
+	UpdatePlayerTargets(PRI);
+	ModifyPlayer(PRI);
+	ResetLevelTimerFor(PRI);
 }
 
-simulated function NotifyPlayer(CRZPawn P)
+simulated function NotifyPlayer(TTPRI PRI)
 {
-	local TTPRI PRI;
-
-	PRI = TTPRI(P.PlayerReplicationInfo);
 	if ( PRI.CurrentLevel == None ) // If we are not in a valid level, just send the Savepoint message
-		Super.NotifyPlayer(P);
-	else if ( Role == ROLE_Authority && PlayerController(P.Controller) != None )
-		PlayerController(P.Controller).ReceiveLocalizedMessage(class'TTLevelTimeMessage', PRI.CurrentTimeMillis()-PRI.LevelStartDate,,, Self);
+		Super.NotifyPlayer(PRI);
+	else if ( Role == ROLE_Authority && PlayerController(PRI.Owner) != None )
+		PlayerController(PRI.Owner).ReceiveLocalizedMessage(class'TTLevelTimeMessage', PRI.CurrentTimeMillis()-PRI.LevelStartDate,,, Self);
 }
 
-function CheckLevelTime(CRZPawn P)
+function CheckLevelTime(TTPRI PRI)
 {
-	local TTPRI PRI;
-
-	PRI = TTPRI(P.PlayerReplicationInfo);
-	if ( PRI.CurrentLevel == None ) // Ignore leveltime if we are not in a valid level
-		return;
-
-	TTGame(WorldInfo.Game).CheckLevelTime(PRI);
+	if ( PRI.CurrentLevel != None ) // Ignore leveltime if we are not in a valid level
+		TTGame(WorldInfo.Game).CheckLevelTime(PRI);
 }
 
 /** Called by the gamemode */
-simulated function RespawnPlayer(CRZPawn P)
+simulated function RespawnPlayer(TTPRI PRI)
 {
-	ClearPlayerTargets(P);
-	UpdatePlayerTargets(P);
-	ModifyPlayer(P);
-	SetRespawnPointFor(P);
-	ResetLevelTimerFor(P);
+	ClearPlayerTargets(PRI);
+	UpdatePlayerTargets(PRI);
+	ModifyPlayer(PRI);
+	SetRespawnPointFor(PRI);
+	ResetLevelTimerFor(PRI);
 }
 
-simulated function ResetLevelTimerFor(CRZPawn P)
+simulated function ResetLevelTimerFor(TTPRI PRI)
 {
-	local TTPRI PRI;
-
-	PRI = TTPRI(P.PlayerReplicationInfo);
 	PRI.LevelReachedSavepoints.Length = 0;
 	PRI.LevelStartDate = PRI.CurrentTimeMillis();
 	if ( Role == ROLE_Authority && WorldInfo.NetMode != NM_Standalone )

@@ -129,10 +129,10 @@ private function RecalcWidth()
 private function RecalcHeight()
 {
 	if ( lines.Length > 0 )
-		MoveTo("_","_","_", lines[lines.Length-1].grp.offY.Val + LINE_HEIGHT + PAD_Y, 0.25, ANIM_EASE_IN);
+		MoveToAuto("height:" $ (lines[lines.Length-1].grp.offY.Val + LINE_HEIGHT + PAD_Y), 0.25, ANIM_EASE_IN);
 		//SetPosAuto("height:" $ (lines[lines.Length-1].grp.offY.Val + LINE_HEIGHT + PAD_Y));
 	else
-		MoveTo("_","_","_", head.grp.offY.Val + LINE_HEIGHT + PAD_Y, 0.25, ANIM_EASE_IN);
+		MoveToAuto("height:" $ (head.grp.offY.Val + LINE_HEIGHT + PAD_Y), 0.25, ANIM_EASE_IN);
 		//SetPosAuto("height:" $ (head.grp.offY.Val + LINE_HEIGHT + PAD_Y));
 }
 

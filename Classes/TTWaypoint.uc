@@ -69,7 +69,7 @@ simulated function Init(TTGRI GRI)
 				PreviousPoints.AddItem(GRI.AllPoints[i]);
 
 	if ( WorldInfo.NetMode != NM_DedicatedServer )
-		SetTimer(0.1, false, 'WaitForLocalPC');
+		WaitForLocalPC();
 }
 
 simulated function bool FindInPredecessors(TTWaypoint ToFind)
@@ -88,16 +88,18 @@ simulated function WaitForLocalPC()
 {
 	local PlayerController PC;
 
-	foreach WorldInfo.LocalPlayerControllers(class'PlayerController', PC)
-	{
+	`Log("[D] WAIT FOR LOCAL PC"@Name);
+
+	PC = GetALocalPlayerController();
+	if ( PC != None )
 		FoundLocalPC(PC);
-		return;
-	}
-	SetTimer(0.1, false, 'WaitForLocalPC');
+	else
+		SetTimer(0.1, false, GetFuncName());
 }
 
 simulated function FoundLocalPC(PlayerController PC)
 {
+	`Log("[D] FOUND LOCAL PC"@Name);
 	PC.myHUD.AddPostRenderedActor(Self);
 }
 
@@ -110,51 +112,38 @@ event Touch(Actor Other, PrimitiveComponent OtherComp, vector HitLocation, vecto
 }
 
 /** Called by the gamemode (simulated only for the reacher!) */
-simulated function ReachedBy(CRZPawn P)
+simulated function ReachedBy(TTPRI PRI)
 {
-	NotifyPlayer(P);
-	UpdatePlayerTargets(P);
+	NotifyPlayer(PRI);
+	UpdatePlayerTargets(PRI);
 }
 
-simulated function NotifyPlayer(CRZPawn P)
+simulated function NotifyPlayer(TTPRI PRI)
 {
-	if ( GetALocalPlayerController() == P.Controller && CRZHud(PlayerController(P.Controller).myHUD) != None )
-		CRZHud(PlayerController(P.Controller).myHUD).LocalizedCRZMessage(class'TTWaypointMessage', P.PlayerReplicationInfo, None, ReachString, 0, Self);
+	if ( PRI.IsLocalPlayerPRI() && CRZHud(PlayerController(PRI.Owner).myHUD) != None )
+		CRZHud(PlayerController(PRI.Owner).myHUD).LocalizedCRZMessage(class'TTWaypointMessage', PRI, None, ReachString, 0, Self);
 }
 
-simulated function UpdatePlayerTargets(CRZPawn P)
+simulated function UpdatePlayerTargets(TTPRI PRI)
 {
-	local TTPRI PRI;
 	local int i,j,k;
 
-	PRI = TTPRI(P.PlayerReplicationInfo);
-	if ( PRI != None )
-	{
-		i = PRI.TargetWp.Find(Self);
-		if ( i != INDEX_NONE )
-			PRI.TargetWp.Remove(i,1);
-		else
-			i = PRI.TargetWp.Length;
+	i = PRI.TargetWp.Find(Self);
+	if ( i != INDEX_NONE )
+		PRI.TargetWp.Remove(i,1);
+	else
+		i = PRI.TargetWp.Length;
 
-		for ( j=NextPoints.Length-1; j>=0; j-- )
-		{
-			k = PRI.TargetWp.Find(NextPoints[j]);
-			if ( k > i )    // it appears later in list - remove to re-insert at the place where Self was
-				PRI.TargetWp.Remove(k,1);
-			else if ( k != INDEX_NONE ) // it appears earlier in list - skip
-				continue;
-			PRI.TargetWp.InsertItem(i, NextPoints[j]);
-		}
+	for ( j=NextPoints.Length-1; j>=0; j-- )
+	{
+		k = PRI.TargetWp.Find(NextPoints[j]);
+		if ( k > i )    // it appears later in list - remove to re-insert at the place where Self was
+			PRI.TargetWp.Remove(k,1);
+		else if ( k != INDEX_NONE ) // it appears earlier in list - skip
+			continue;
+		PRI.TargetWp.InsertItem(i, NextPoints[j]);
 	}
 }
-
-
-// How to handle display ??
-//  - show current target waypoint, always
-//  - show next waypoint IIF it's a same-or-higher level waypoint
-// display of parallel paths ??
-//  - ???
-//  - profit
 
 simulated event PostRenderFor(PlayerController PC, Canvas C, Vector CamPos, Vector CamDir)
 {
@@ -182,11 +171,6 @@ simulated function DrawFor(PlayerController PC, Canvas C, Vector CamPos, Vector 
 	Dist = VSize(CamPos - Location);
 	if ( Dist > MaxHudDistance )
 		return;
-
-/*
-	if ( CamDir Dot Normal(Location - CamPos) < 0 )
-		return;
-*/
 
 	ScreenLoc = C.Project(Location);
 	if ( ScreenLoc.X < 0 || ScreenLoc.X >= C.ClipX || ScreenLoc.Y < 0 || ScreenLoc.Y >= C.ClipY )

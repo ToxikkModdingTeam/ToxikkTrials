@@ -40,7 +40,6 @@ function Initialized()
 {
 	Viewport = GameViewportClient(Outer);
 	PC = Viewport.GetPlayerOwner(0).Actor;
-	PRI = TTPRI(PC.PlayerReplicationInfo);
 
 	Root = class'GUIRoot'.static.Create(Self, Viewport);
 	Root.OnLeftMouse = OnClickRoot;
@@ -57,7 +56,8 @@ function bool BuildSpawnTree(Canvas C)
 	`Log("[D] BUILD SPAWN TREE");
 
 	GRI = TTGRI(PC.WorldInfo.GRI);
-	if ( GRI == None || GRI.PointZero == None )
+	PRI = TTPRI(PC.PlayerReplicationInfo);
+	if ( GRI == None || GRI.PointZero == None || PRI == None )
 		return false;
 
 	Root.Clear();

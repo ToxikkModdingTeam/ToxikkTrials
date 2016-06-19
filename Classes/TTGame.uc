@@ -231,6 +231,7 @@ function SetPlayerDefaults(Pawn PlayerPawn)
 {
 	local CRZPawn P;
 	local TTPRI PRI;
+	local TTSavepoint Sp;
 
 	Super.SetPlayerDefaults(PlayerPawn);
 
@@ -252,8 +253,9 @@ function SetPlayerDefaults(Pawn PlayerPawn)
 			PRI.MyCS.RespawnPlayer(P);
 		else
 		{
-			PRI.SpawnPoint.RespawnPlayer(P);
-			PRI.ClientSpawnedAtPoint(P, PRI.SpawnPoint);
+			Sp = PRI.SpawnPoint;    //WARNING: PointZero.RespawnPlayer changes PRI.SpawnPoint
+			Sp.RespawnPlayer(PRI);
+			PRI.ClientSpawnedAtPoint(Sp);
 		}
 	}
 }
@@ -317,15 +319,15 @@ function PawnTouchedWaypoint(CRZPawn P, TTWaypoint Wp)
 					PlayerController(P.Controller).ReceiveLocalizedMessage(class'TTCustomSpawnMessage', 4);
 			}
 			else
-				PlayerReachedWaypoint(P, Wp);
+				PlayerReachedWaypoint(PRI, Wp);
 		}
 	}
 }
 
-function PlayerReachedWaypoint(CRZPawn P, TTWaypoint Wp)
+function PlayerReachedWaypoint(TTPRI PRI, TTWaypoint Wp)
 {
-	Wp.ReachedBy(P);
-	TTPRI(P.PlayerReplicationInfo).ClientReachedWaypoint(P, Wp);
+	Wp.ReachedBy(PRI);
+	PRI.ClientReachedWaypoint(Wp);
 }
 
 function CheckGlobalTime(TTPRI PRI)
@@ -443,9 +445,12 @@ function CheckGlobalTime(TTPRI PRI)
 	Playerlist.SaveConfig();
 	MapData.SaveConfig();
 
+	if ( WorldInfo.NetMode == NM_Standalone || WorldInfo.NetMode == NM_ListenServer )
+		GRI.ReplicatedEvent('Globalboard'); // not even ashamed
+
 	UpdateLeaderboard();
-	GRI.UpdatedGlobalboard();
 }
+
 
 static function int TimeRangeLimitForTime(int TimeMillis)
 {
@@ -571,8 +576,10 @@ function CheckLevelTime(TTPRI PRI)
 	Playerlist.SaveConfig();
 	MapData.Levels[LevelIdx].SaveConfig();
 
+	if ( WorldInfo.NetMode == NM_Standalone || WorldInfo.NetMode == NM_ListenServer )
+		GRI.ReplicatedEvent('Levelboard');
+
 	UpdateLeaderboard();
-	GRI.UpdatedLevelboard(LevelIdx);
 }
 
 static function int PointsForLevelRank(int Rank)
@@ -603,6 +610,9 @@ function UpdateLeaderboard()
 		if ( Playerlist.Player[k].PRI != None )
 			Playerlist.Player[k].PRI.LeaderboardPos = i;
 	}
+
+	if ( WorldInfo.NetMode == NM_Standalone || WorldInfo.NetMode == NM_ListenServer )
+		GRI.ReplicatedEvent('Leaderboard');
 }
 
 
