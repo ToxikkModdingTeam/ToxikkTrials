@@ -37,7 +37,7 @@ simulated function NotifyPlayer(TTPRI PRI)
 	if ( PRI.CurrentLevel == None ) // If we are not in a valid level, just send the Savepoint message
 		Super.NotifyPlayer(PRI);
 	else if ( Role == ROLE_Authority && PlayerController(PRI.Owner) != None )
-		PlayerController(PRI.Owner).ReceiveLocalizedMessage(class'TTLevelTimeMessage', PRI.CurrentTimeMillis()-PRI.LevelStartDate, PRI,, Self);
+		PlayerController(PRI.Owner).ReceiveLocalizedMessage(class'TTLevelTimeMessage', PRI.CurrentTimeMillis()-PRI.LevelStartDate, PRI,, PRI.CurrentLevel);
 }
 
 function CheckLevelTime(TTPRI PRI)
