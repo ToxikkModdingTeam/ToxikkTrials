@@ -60,6 +60,9 @@ var array<TTSavepoint> LevelReachedSavepoints;
 /** Server Replicated - Whether GlobalTimer should be disabled (finished and waiting for RESET) */
 var bool bStopGlobal;
 
+/** Server - To detect fast-forwarding in global (because we don't re-lock them upon reset anymore) */
+var array<TTSavepoint> GlobalReachedSavepoints;
+
 
 Replication
 {
@@ -94,6 +97,10 @@ function WaitForPlayerData()
 		SetTimer(0.1, false, GetFuncName());
 }
 
+//TODO: Move all the spawnpoint shenanigans to CLIENT-SIDE, it is only used in the SpawnTree interface
+// Just pass the TTSavepoint to server before respawning (ServerPickSpawnPoint)
+// bLockedSpawnPoint doesn't have to be on server side AT ALL
+// TTSavepoint call to SetSpawnPoint could be done on client side ONLY
 function SetSpawnPoint(TTSavepoint Sp)
 {
 	if ( bLockedSpawnPoint || Sp == None )
@@ -106,7 +113,11 @@ function SetSpawnPoint(TTSavepoint Sp)
 	}
 
 	SpawnPoint = Sp;
+}
 
+//TODO: After the above is done, see if it makes sense to make this SIMULATED
+function UpdateCurrentLevel(TTSavepoint Sp)
+{
 	if ( Sp.IsA('TTLevel') )
 		SetCurrentLevel(TTLevel(Sp));
 	else if ( CurrentLevel != None && LevelReachedSavepoints.Find(Sp) == INDEX_NONE )
@@ -116,6 +127,10 @@ function SetSpawnPoint(TTSavepoint Sp)
 		// Timer is not valid
 		SetCurrentLevel(None);
 	}
+
+	// Same shit for global now, because we don't re-lock points upon RESET anymore!
+	if ( !bStopGlobal && GlobalReachedSavepoints.Find(Sp) == INDEX_NONE )
+		SetGlobalTimerEnabled(false);
 }
 
 function SetGlobalTimerEnabled(bool bEnabled)
@@ -137,6 +152,7 @@ reliable server function ServerPickSpawnPoint(TTSavepoint Sp, bool bLock=false)
 	bLockedSpawnPoint = false;
 	SetSpawnPoint(Sp);
 	bLockedSpawnPoint = bLock;
+	UpdateCurrentLevel(Sp);
 	WorldInfo.Game.RestartPlayer(Controller(Owner));
 }
 

@@ -33,21 +33,18 @@ simulated function SetRespawnPointFor(TTPRI PRI)
 	if ( !bInitiallyAvailable && PRI.UnlockedSavepoints.Find(Self) == INDEX_NONE )
 	{
 		PRI.UnlockedSavepoints.AddItem(Self);
-
-		if ( PRI.IsLocalPlayerPRI() && TTHud(PlayerController(PRI.Owner).myHUD) != None )
-		{
-			if ( UnlockString != "" )
-				CRZHud(PlayerController(PRI.Owner).myHUD).LocalizedCRZMessage(class'TTWaypointMessage', PRI, None, UnlockString, 0, Self);
-
-			//TTHud(PlayerController(PRI.Owner).myHUD).SpawnTree.UpdateButtons();
-		}
+		if ( UnlockString != "" && PRI.IsLocalPlayerPRI() && TTHud(PlayerController(PRI.Owner).myHUD) != None )
+			CRZHud(PlayerController(PRI.Owner).myHUD).LocalizedCRZMessage(class'TTWaypointMessage', PRI, None, UnlockString, 0, Self);
 	}
-	if ( PRI.LevelReachedSavepoints.Find(Self) == INDEX_NONE )
+	if ( PRI.LevelReachedSavepoints.Find(Self) == INDEX_NONE )  // new security stuff for level
 		PRI.LevelReachedSavepoints.AddItem(Self);
+	if ( PRI.GlobalReachedSavepoints.Find(Self) == INDEX_NONE ) // new security stuff for global
+		PRI.GlobalReachedSavepoints.AddItem(Self);
 
 	PRI.SetSpawnPoint(Self);
+	PRI.UpdateCurrentLevel(Self);
 
-	if ( Role < ROLE_Authority )    // fix for non-replication issue LVL1 => PointZero => LVL1 
+	if ( Role < ROLE_Authority && !PRI.bLockedSpawnPoint )    // fix for non-replication issue LVL1 => PointZero => LVL1 
 		PRI.SpawnPoint = Self;
 }
 
@@ -87,6 +84,6 @@ defaultproperties
 	ForcedHealth=100
 	ForcedArmor=0
 
-	HudText="Savepoint"
+	HudText="SAVE"
 	HudColor=(R=64,G=200,B=64,A=255)
 }

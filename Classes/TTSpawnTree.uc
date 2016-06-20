@@ -30,7 +30,7 @@ var array<GUIGroup> Columns;
 CONST PAD_X = 16;
 CONST PAD_Y = 12;
 CONST TOP_SPACING = 24;
-CONST NODE_SPACING = 48;
+CONST NODE_SPACING = 44;
 CONST ROW_HEIGHT = 64;
 var const Color COLOR_SELECTED, COLOR_LOCKED;
 var const Color COLOR_AVAILABLE, COLOR_UNAVAILABLE, COLOR_TO_UNAVAILABLE;
@@ -106,6 +106,7 @@ function bool BuildSpawnTree(Canvas C)
 function BuildTreeNodes(Canvas C, int ParentIdx, TTWaypoint Cur, int Depth, out int Row)
 {
 	local TTSavepoint Sp;
+	local TTPointZero PZ;
 	local int i, j;
 
 	`Log("[D] At point " $ Cur.Name);
@@ -153,7 +154,18 @@ function BuildTreeNodes(Canvas C, int ParentIdx, TTWaypoint Cur, int Depth, out 
 		}
 
 		if ( ParentIdx == INDEX_NONE && Sp.IsA('TTPointZero') )
-			BuildTreeNodes(C, i, TTPointZero(Sp).InitialPoint, Depth+1, Row);
+		{
+			// Special case: if the initial point has only one successor, skip initial (PointZero ==> Point2)
+			PZ = TTPointZero(Sp);
+			if ( PZ.InitialPoint.NextPoints.Length == 1 )
+			{
+				Nodes[i].btn.Text = PZ.SingleSpawnTreeLabel;
+				Nodes[i].btn.SizeToFit(C);
+				BuildTreeNodes(C, i, PZ.InitialPoint.NextPoints[0], Depth+1, Row);
+			}
+			else
+				BuildTreeNodes(C, i, PZ.InitialPoint, Depth+1, Row);
+		}
 		else
 		{
 			if ( ParentIdx != INDEX_NONE )
@@ -181,6 +193,10 @@ function Rebuild()
 function UpdateButtons()
 {
 	local int i;
+
+	// uglyfix: When PointZero.InitialPoint is skipped in the SpawnTree but selected automatically, we need to reselect PZ!
+	if ( Nodes.Find('Savepoint', PRI.SpawnPoint) == INDEX_NONE )
+		PRI.SpawnPoint = Nodes[0].Savepoint;
 
 	for ( i=0; i<Nodes.Length; i++ )
 	{

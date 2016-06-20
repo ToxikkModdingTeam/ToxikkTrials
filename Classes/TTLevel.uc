@@ -39,8 +39,11 @@ simulated function NotifyPlayer(TTPRI PRI)
 
 function CheckLevelTime(TTPRI PRI)
 {
-	if ( PRI.CurrentLevel != None ) // Ignore leveltime if we are not in a valid level
+	if ( PRI.CurrentLevel != None )
+	{
 		TTGame(WorldInfo.Game).CheckLevelTime(PRI);
+		PRI.SetCurrentLevel(None);
+	}
 }
 
 /** Called by the gamemode */
@@ -69,6 +72,6 @@ defaultproperties
 	SpawnTreeLabel="LVL"
 
 	ReachString="Level finished in %t"
-	HudText="Level"
+	HudText="LVL"
 	HudColor=(R=128,G=200,B=255,A=255)
 }

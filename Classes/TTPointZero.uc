@@ -13,6 +13,8 @@ class TTPointZero extends TTSavepoint
 /** Either a TTLevel or a TTSavepoint, depending on whether map starts starts in a level */
 var(PointZero) TTSavepoint InitialPoint;
 
+var(Savepoint) String SingleSpawnTreeLabel;
+
 
 simulated function Init(TTGRI GRI)
 {
@@ -43,8 +45,8 @@ simulated function RespawnPlayer(TTPRI PRI)
 
 simulated function GlobalResetFor(TTPRI PRI)
 {
-	PRI.UnlockedSavepoints.Length = 0;  // relock all Savepoints
-	PRI.ValidatedObjectives.Length = 0; // invalidate all objectives
+	PRI.GlobalReachedSavepoints.Length = 0;
+	PRI.ValidatedObjectives.Length = 0;
 	PRI.GlobalStartDate = PRI.CurrentTimeMillis();
 	PRI.SetGlobalTimerEnabled(true);
 }
@@ -53,6 +55,7 @@ simulated function GlobalResetFor(TTPRI PRI)
 defaultproperties
 {
 	SpawnTreeLabel="RESET"
+	SingleSpawnTreeLabel="START"
 	bInitiallyAvailable=true
 
 	CollisionType=COLLIDE_NoCollision

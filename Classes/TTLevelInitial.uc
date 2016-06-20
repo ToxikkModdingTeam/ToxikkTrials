@@ -1,7 +1,8 @@
 //================================================================
 // Trials.TTLevelInitial
 // ----------------
-// ...
+// Simple TTLevel wrapper for PointZero.InitialPoint
+// For mappers
 // ----------------
 // by Chatouille
 //================================================================

@@ -17,24 +17,19 @@ simulated function ReachedBy(TTPRI PRI)
 {
 	NotifyPlayer(PRI);
 	CheckLevelTime(PRI);
-	ResetRespawnPointFor(PRI);
 	ValidateObjectiveFor(PRI);
 	UpdatePlayerTargets(PRI);
-	//ResetLevelTimerFor(PRI);
 }
 
-// when we finish a Objective, we must set the Spawnpoint back to the last Level (not keep the last Savepoint) !
-simulated function ResetRespawnPointFor(TTPRI PRI)
+simulated function NotifyPlayer(TTPRI PRI)
 {
-	if ( PRI.CurrentLevel != None )
-		PRI.SetSpawnPoint(PRI.CurrentLevel);
-	else
-		PRI.SetSpawnPoint(TTGRI(WorldInfo.GRI).PointZero);
+	if ( Role == ROLE_Authority && PRI.CurrentLevel != None && PlayerController(PRI.Owner) != None )
+		PlayerController(PRI.Owner).ReceiveLocalizedMessage(class'TTLevelTimeMessage', PRI.CurrentTimeMillis()-PRI.LevelStartDate,,, Self);
 }
 
 simulated function ValidateObjectiveFor(TTPRI PRI)
 {
-	if ( PRI.ValidatedObjectives.Find(Self) == INDEX_NONE )
+	if ( !PRI.bStopGlobal && PRI.ValidatedObjectives.Find(Self) == INDEX_NONE )
 	{
 		PRI.ValidatedObjectives.AddItem(Self);
 
@@ -44,7 +39,6 @@ simulated function ValidateObjectiveFor(TTPRI PRI)
 				PlayerController(PRI.Owner).ReceiveLocalizedMessage(class'TTGlobalTimeMessage', PRI.CurrentTimeMillis()-PRI.GlobalStartDate, PRI,, Self);
 
 			PRI.SetGlobalTimerEnabled(false);
-			PRI.SetCurrentLevel(None);  // can't be in a level after finished global - until respawn at some TTLevel
 			PRI.ClearTimer('SendTimerSync');
 
 			TTGame(WorldInfo.Game).CheckGlobalTime(PRI);
@@ -55,7 +49,6 @@ simulated function ValidateObjectiveFor(TTPRI PRI)
 
 defaultproperties
 {
-	ReachString="Level finished in %t"
-	HudText="Objective"
+	HudText="OBJ"
 	HudColor=(R=255,G=0,B=255,A=255)
 }
