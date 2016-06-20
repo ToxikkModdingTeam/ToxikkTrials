@@ -14,6 +14,9 @@ class TTLevel extends TTSavepoint
 /** Shows up in the level-timer hud box */
 var(Level) String LevelDisplayName;
 
+/** Time message to display when user finishes level (valid timer) */
+var(Level) String TimeMessage;
+
 /** Idx of level for records - set by GRI, deterministically */
 var int LevelIdx;
 
@@ -34,7 +37,7 @@ simulated function NotifyPlayer(TTPRI PRI)
 	if ( PRI.CurrentLevel == None ) // If we are not in a valid level, just send the Savepoint message
 		Super.NotifyPlayer(PRI);
 	else if ( Role == ROLE_Authority && PlayerController(PRI.Owner) != None )
-		PlayerController(PRI.Owner).ReceiveLocalizedMessage(class'TTLevelTimeMessage', PRI.CurrentTimeMillis()-PRI.LevelStartDate,,, Self);
+		PlayerController(PRI.Owner).ReceiveLocalizedMessage(class'TTLevelTimeMessage', PRI.CurrentTimeMillis()-PRI.LevelStartDate, PRI,, Self);
 }
 
 function CheckLevelTime(TTPRI PRI)
@@ -67,11 +70,12 @@ simulated function ResetLevelTimerFor(TTPRI PRI)
 
 defaultproperties
 {
-	LevelDisplayName="- Level -"
+	LevelDisplayName="Level ?"
+	TimeMessage="%lvl finished in %time"
 
 	SpawnTreeLabel="LVL"
 
-	ReachString="Level finished in %t"
+	ReachString="Level finished"
 	HudText="LVL"
 	HudColor=(R=128,G=200,B=255,A=255)
 }

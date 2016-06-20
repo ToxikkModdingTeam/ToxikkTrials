@@ -12,7 +12,8 @@ class TTLevelInitial extends TTLevel
 
 defaultproperties
 {
-	LevelDisplayName="- Level 1 -"
+	LevelDisplayName="Level 1"
+	TimeMessage=""
 
 	SpawnTreeLabel="LVL 1"
 	bInitiallyAvailable=true

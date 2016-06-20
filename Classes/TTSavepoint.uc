@@ -10,6 +10,7 @@
 class TTSavepoint extends TTCheckpoint
 	placeable;
 
+
 var(Savepoint) array<PlayerStart> Respawns;
 var(Savepoint) String SpawnTreeLabel;   //TBD: should the SpawnTree have Savepoints (=midlevel) or only SubObjectives (=levelstart) ???
 
@@ -18,7 +19,6 @@ var(Savepoint) bool bInitiallyAvailable;
 var(Savepoint) String UnlockString;
 
 
-/** Called by the gamemode */
 simulated function ReachedBy(TTPRI PRI)
 {
 	SetRespawnPointFor(PRI);
@@ -41,10 +41,9 @@ simulated function SetRespawnPointFor(TTPRI PRI)
 	if ( PRI.GlobalReachedSavepoints.Find(Self) == INDEX_NONE ) // new security stuff for global
 		PRI.GlobalReachedSavepoints.AddItem(Self);
 
-	PRI.SetSpawnPoint(Self);
 	PRI.UpdateCurrentLevel(Self);
 
-	if ( Role < ROLE_Authority && !PRI.bLockedSpawnPoint )    // fix for non-replication issue LVL1 => PointZero => LVL1 
+	if ( !PRI.bLockedSpawnPoint )	// don't care about serverside, client sends SpawnPoint every before spawn
 		PRI.SpawnPoint = Self;
 }
 

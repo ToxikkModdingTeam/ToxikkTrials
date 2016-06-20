@@ -178,7 +178,7 @@ function UpdateLevelboard()
 		// Just changed level - clear lines and rebuild the board
 		if ( Levelboard.iData[0] != Idx )
 		{
-			Levelboard.SetTitle(PRI.CurrentLevel.LevelDisplayName);
+			Levelboard.SetTitle("-" @ PRI.CurrentLevel.LevelDisplayName @ "-");
 			Levelboard.FlashColors(MakeColor(255,200,128,220), Levelboard.TRANSPARENT);
 			Levelboard.Empty();
 		}
@@ -252,7 +252,7 @@ function LevelChanged(TTPRI PRI)
 
 	if ( PRI.CurrentLevel != None )
 	{
-		LevelTimer.title.Text = PRI.CurrentLevel.LevelDisplayName;
+		LevelTimer.title.Text = "-" @ PRI.CurrentLevel.LevelDisplayName @ "-";
 		LevelTimer.title.FlashColors(MakeColor(255,200,128,220), LevelTimer.title.TRANSPARENT);
 		if ( CurrentDisplayMode == TTDM_Timers )
 			LevelTimer.grp.AlphaTo(1, 0.5, ANIM_EASE_IN);

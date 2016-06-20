@@ -194,6 +194,9 @@ function UpdateButtons()
 {
 	local int i;
 
+	if ( Nodes.Length == 0 )	// filter out first call in Show() before SpawnTree is created
+		return;
+
 	// uglyfix: When PointZero.InitialPoint is skipped in the SpawnTree but selected automatically, we need to reselect PZ!
 	if ( Nodes.Find('Savepoint', PRI.SpawnPoint) == INDEX_NONE )
 		PRI.SpawnPoint = Nodes[0].Savepoint;
@@ -218,7 +221,7 @@ function OnClickRoot(GUIGroup elem, bool bDown)
 	if ( bDown )
 	{
 		Show(false);
-		TTPRI(PC.PlayerReplicationInfo).ServerPickSpawnPoint(PRI.SpawnPoint, PRI.bLockedSpawnPoint);
+		TTPRI(PC.PlayerReplicationInfo).ServerPickSpawnPoint(PRI.SpawnPoint);
 	}
 }
 
@@ -289,19 +292,6 @@ function OnDrawNode(GUIGroup elem, Canvas C)
 
 event Tick(float dt)
 {
-/*
-	if ( PC != None && PC.IsInState('Dead') && !PRI.bHasCS )
-	{
-		if ( !bShow )
-			Show(true);
-		//else if ( !Viewport.bDisplayHardwareMouseCursor )
-			//Viewport.SetHardwareMouseCursorVisibility(true);
-
-		Root.Tick(dt);
-	}
-	else if ( bShow )
-		Show(false);
-*/
 	if ( Root != None )
 		Root.Tick(dt);
 }
@@ -324,7 +314,7 @@ event PostRender(Canvas C)
 	if ( bShow )
 	{
 		if ( Viewport.Outer.TransitionType != TT_None )
-			Show(false);
+			Free();
 		else
 		{
 			if ( bRebuild && !BuildSpawnTree(C) )
@@ -364,6 +354,8 @@ function Free()
 	if ( Root != None )
 		Root.Free();
 	Root = None;
+	Panel = None;
+	Columns.Length = 0;
 	PRI = None;
 }
 

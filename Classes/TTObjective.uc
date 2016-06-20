@@ -9,7 +9,7 @@
 //================================================================
 class TTObjective extends TTLevel
 	placeable
-	hidecategories(/*Waypoint,*/Checkpoint,Savepoint,Level);
+	hidecategories(Checkpoint,Savepoint,Level);
 
 
 /** Called by the gamemode */
@@ -19,12 +19,6 @@ simulated function ReachedBy(TTPRI PRI)
 	CheckLevelTime(PRI);
 	ValidateObjectiveFor(PRI);
 	UpdatePlayerTargets(PRI);
-}
-
-simulated function NotifyPlayer(TTPRI PRI)
-{
-	if ( Role == ROLE_Authority && PRI.CurrentLevel != None && PlayerController(PRI.Owner) != None )
-		PlayerController(PRI.Owner).ReceiveLocalizedMessage(class'TTLevelTimeMessage', PRI.CurrentTimeMillis()-PRI.LevelStartDate,,, Self);
 }
 
 simulated function ValidateObjectiveFor(TTPRI PRI)
@@ -49,6 +43,8 @@ simulated function ValidateObjectiveFor(TTPRI PRI)
 
 defaultproperties
 {
+	ReachString="Objective done"
+
 	HudText="OBJ"
 	HudColor=(R=255,G=0,B=255,A=255)
 }

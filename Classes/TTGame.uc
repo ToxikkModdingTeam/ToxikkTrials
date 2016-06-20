@@ -218,7 +218,7 @@ function NavigationPoint FindPlayerStart(Controller Player, optional byte InTeam
 				return PRI.MyCS;
 
 			if ( PRI.SpawnPoint == None )   //failsafe
-				PRI.SetSpawnPoint(GRI.PointZero);
+				PRI.SpawnPoint = GRI.PointZero;
 
 			return PRI.SpawnPoint.FindStartSpot(Player);
 		}

@@ -20,13 +20,13 @@ var bool bForbiddenObj;
 /** Server - whether the player should be killed before restoring obj clearance */
 var bool bMustDieToClean;
 
-/** Client Replicated Server Replicated - Current spawn point. Initially should be PointZero */
+/** Client Replicated - Current spawn point. Initially should be PointZero */
 var TTSavepoint SpawnPoint;
 
-/** Server Replicated - Stores the current level spawn point */
+/** Server Replicated - Stores the current active level */
 var RepNotify TTLevel CurrentLevel;
 
-/** Client Replicated - Whether current spawn point is locked */
+/** Client - Whether current spawn point is locked */
 var bool bLockedSpawnPoint;
 
 /** Both-sided - Current target waypoint(s) */
@@ -67,7 +67,7 @@ var array<TTSavepoint> GlobalReachedSavepoints;
 Replication
 {
 	if ( bNetInitial || bNetDirty )
-		bHasCS, bForbiddenObj, SpawnPoint, CurrentLevel, TotalPoints, MapPoints, bStopGlobal;
+		bHasCS, bForbiddenObj, CurrentLevel, LeaderboardPos, TotalPoints, MapPoints, bStopGlobal;
 }
 
 
@@ -76,10 +76,7 @@ simulated function PostBeginPlay()
 	Super.PostBeginPlay();
 
 	if ( Role == ROLE_Authority )
-	{
 		WaitForPlayerData();
-		SetSpawnPoint(TTGRI(WorldInfo.GRI).PointZero);
-	}
 }
 
 function WaitForPlayerData()
@@ -97,25 +94,7 @@ function WaitForPlayerData()
 		SetTimer(0.1, false, GetFuncName());
 }
 
-//TODO: Move all the spawnpoint shenanigans to CLIENT-SIDE, it is only used in the SpawnTree interface
-// Just pass the TTSavepoint to server before respawning (ServerPickSpawnPoint)
-// bLockedSpawnPoint doesn't have to be on server side AT ALL
-// TTSavepoint call to SetSpawnPoint could be done on client side ONLY
-function SetSpawnPoint(TTSavepoint Sp)
-{
-	if ( bLockedSpawnPoint || Sp == None )
-		return;
-
-	if ( !Sp.bInitiallyAvailable && UnlockedSavepoints.Find(Sp) == INDEX_NONE )
-	{
-		`Log("[Trials] WARNING: SetSpawnPoint with unavailable Sp" @ PlayerName @ Sp.Name);
-		return;
-	}
-
-	SpawnPoint = Sp;
-}
-
-//TODO: After the above is done, see if it makes sense to make this SIMULATED
+//TODO: See if it makes sense to make this SIMULATED
 function UpdateCurrentLevel(TTSavepoint Sp)
 {
 	if ( Sp.IsA('TTLevel') )
@@ -147,11 +126,14 @@ function SetCurrentLevel(TTLevel Level)
 		ReplicatedEvent('CurrentLevel');
 }
 
-reliable server function ServerPickSpawnPoint(TTSavepoint Sp, bool bLock=false)
+reliable server function ServerPickSpawnPoint(TTSavepoint Sp)
 {
-	bLockedSpawnPoint = false;
-	SetSpawnPoint(Sp);
-	bLockedSpawnPoint = bLock;
+	if ( !Sp.bInitiallyAvailable && UnlockedSavepoints.Find(Sp) == INDEX_NONE )
+	{
+		`Log("[Trials] WARNING: SetSpawnPoint with unavailable Sp" @ PlayerName @ Sp.Name);
+		return;
+	}
+	SpawnPoint = Sp;
 	UpdateCurrentLevel(Sp);
 	WorldInfo.Game.RestartPlayer(Controller(Owner));
 }

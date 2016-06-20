@@ -17,11 +17,11 @@ static function string GetCRZString(optional int Switch, optional PlayerControll
 	local String Str;
 
 	if ( TTLevel(OptionalObject) != None )
-		Str = TTLevel(OptionalObject).ReachString;
+		Str = Repl(TTLevel(OptionalObject).TimeMessage, "%lvl", TTLevel(OptionalObject).LevelDisplayName);
 	else
-		Str = class'TTLevel'.default.ReachString;
+		Str = Repl(class'TTLevel'.default.TimeMessage, "%lvl", class'TTLevel'.default.LevelDisplayName);
 
-	return Repl(Str, "%t", class'TTHud'.static.FormatTrialTime(Switch));
+	return Repl(Str, "%time", class'TTHud'.static.FormatTrialTime(Switch));
 }
 
 defaultproperties
