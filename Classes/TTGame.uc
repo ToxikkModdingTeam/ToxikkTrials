@@ -191,6 +191,10 @@ function BuildLevelboard(int Idx)
 function bool CheckRelevance(Actor Other)
 {
 	local CRZWeaponPickupFactory wpf;
+
+	if ( ! Super.CheckRelevance(Other) )
+		return false;
+
 	wpf = CRZWeaponPickupFactory(Other);
 	if ( wpf != None )
 	{
@@ -198,10 +202,11 @@ function bool CheckRelevance(Actor Other)
 		if ( !wpf.IsA('TTWPF') )
 		{
 			Spawn(class'TTWPF', wpf, wpf.Tag, wpf.Location, wpf.Rotation);
-			return false;
+			wpf.DisablePickup();
+			wpf.SetHidden(true);
 		}
 	}
-	return Super.CheckRelevance(Other);
+	return true;
 }
 
 // Custom spawning system
@@ -310,6 +315,10 @@ function PawnTouchedWaypoint(CRZPawn P, TTWaypoint Wp)
 
 	if ( P.Health > 0 )
 	{
+		//MEH: this should be in TTWaypoint, but easier to handle here... because of the Point's subclassing methods
+		if ( Wp.bEnableTeleporter && !Wp.bTeleportOnlyWhenTarget )
+			Wp.TeleportPlayer(P);
+
 		PRI = TTPRI(P.PlayerReplicationInfo);
 		if ( PRI != None && PRI.TargetWp.Find(Wp) != INDEX_NONE )
 		{
@@ -319,7 +328,12 @@ function PawnTouchedWaypoint(CRZPawn P, TTWaypoint Wp)
 					PlayerController(P.Controller).ReceiveLocalizedMessage(class'TTCustomSpawnMessage', 4);
 			}
 			else
+			{
 				PlayerReachedWaypoint(PRI, Wp);
+
+				if ( Wp.bEnableTeleporter && Wp.bTeleportOnlyWhenTarget )
+					Wp.TeleportPlayer(P);
+			}
 		}
 	}
 }

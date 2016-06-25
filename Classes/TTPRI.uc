@@ -99,7 +99,7 @@ function UpdateCurrentLevel(TTSavepoint Sp)
 {
 	if ( Sp.IsA('TTLevel') )
 		SetCurrentLevel(TTLevel(Sp));
-	else if ( CurrentLevel != None && LevelReachedSavepoints.Find(Sp) == INDEX_NONE )
+	else if ( CurrentLevel != None && !Sp.bInitiallyAvailable && LevelReachedSavepoints.Find(Sp) == INDEX_NONE )
 	{
 		// Either we switched to a Savepoint in the middle of another level
 		// Or we tried to fast-forward the current level by dying and respawning at a further Savepoint already unlocked (but not re-reached since level-restart)
@@ -108,7 +108,7 @@ function UpdateCurrentLevel(TTSavepoint Sp)
 	}
 
 	// Same shit for global now, because we don't re-lock points upon RESET anymore!
-	if ( !bStopGlobal && GlobalReachedSavepoints.Find(Sp) == INDEX_NONE )
+	if ( !bStopGlobal && !Sp.bInitiallyAvailable && GlobalReachedSavepoints.Find(Sp) == INDEX_NONE )
 		SetGlobalTimerEnabled(false);
 }
 

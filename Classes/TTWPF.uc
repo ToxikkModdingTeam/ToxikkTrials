@@ -23,7 +23,7 @@ simulated event PreBeginPlay()
 	{
 		MyWeaponPickupClass = CRZWeaponPickupFactory(Owner).WeaponPickupClass;
 		WeaponPickupClass = MyWeaponPickupClass;
-		if ( WorldInfo.NetMode == NM_Standalone )
+		if ( WorldInfo.NetMode == NM_Standalone || WorldInfo.NetMode == NM_ListenServer )
 			ReplicatedEvent('MyWeaponPickupClass');
 	}
 
@@ -144,4 +144,5 @@ auto state Pickup
 defaultproperties
 {
 	bVerifiedWeaponStay=true
+	bNoDelete=false
 }

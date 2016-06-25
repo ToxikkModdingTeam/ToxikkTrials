@@ -192,7 +192,23 @@ simulated function WaitForLocalPC()
 
 simulated function InitClientStuff(PlayerController PC)
 {
+	local UTItemPickupFactory pf;
+	local CRZWeaponPickupFactory wpf;
 	local TTRacingHellraiserTarget HRTarget;
+
+	foreach DynamicActors(class'UTItemPickupFactory', pf)
+	{
+		pf.RespawnTime = 0.01;
+	}
+
+	foreach DynamicActors(class'CRZWeaponPickupFactory', wpf)
+	{
+		if ( !wpf.IsA('TTWPF') )
+		{
+			wpf.WeaponPickupClass = None;
+			wpf.bVerifiedWeaponStay = true;	// avoid an error log
+		}
+	}
 
 	foreach WorldInfo.AllActors(class'TTRacingHellraiserTarget', HRTarget)
 		PC.myHUD.AddPostRenderedActor(HRTarget);

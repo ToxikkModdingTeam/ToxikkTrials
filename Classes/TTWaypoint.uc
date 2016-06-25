@@ -14,8 +14,16 @@ class TTWaypoint extends Trigger
 var(Waypoint) String ReachString;
 var(Waypoint) array<TTWaypoint> NextPoints;
 
+var(Teleport) bool bEnableTeleporter;
+var(Teleport) String URL;
+var(Teleport) bool bResetVelocity;
+var(Teleport) bool bTeleportOnlyWhenTarget;
+
 /** internal - list of waypoints pointing to me */
 var array<TTWaypoint> PreviousPoints;
+
+/** internal - target teleporter */
+var Teleporter TargetTP;
 
 /** Text to write on HUD icon when this waypoint is target */
 var(HUD) String HudText;
@@ -106,6 +114,33 @@ event Touch(Actor Other, PrimitiveComponent OtherComp, vector HitLocation, vecto
 
 	if ( CRZPawn(Other) != None && TTGame(WorldInfo.Game) != None )
 		TTGame(WorldInfo.Game).PawnTouchedWaypoint(CRZPawn(Other), Self);
+}
+
+function TeleportPlayer(Pawn P)
+{
+	local Teleporter T;
+
+	if ( TargetTP == None )
+	{
+		foreach WorldInfo.AllNavigationPoints(class'Teleporter', T)
+		{
+			if ( String(T.Tag) ~= URL )
+			{
+				TargetTP = T;
+				break;
+			}
+		}
+		if ( TargetTP == None )
+			return;
+	}
+	P.PlayTeleportEffect(true, true);
+	TargetTP.Accept(P, Self);
+	if ( bResetVelocity )
+	{
+		P.Velocity = Vect(0,0,0);
+		if ( P.Physics == PHYS_Walking )
+			P.SetPhysics(PHYS_Falling);
+	}
 }
 
 /** Called by the gamemode (simulated only for the reacher!) */
