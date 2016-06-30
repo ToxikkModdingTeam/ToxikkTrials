@@ -12,7 +12,7 @@ class TTSavepoint extends TTCheckpoint
 
 
 var(Savepoint) array<PlayerStart> Respawns;
-var(Savepoint) String SpawnTreeLabel;   //TBD: should the SpawnTree have Savepoints (=midlevel) or only SubObjectives (=levelstart) ???
+var(Savepoint) String SpawnTreeLabel;
 
 /** Whether this point is already unlocked initially */
 var(Savepoint) bool bInitiallyAvailable;

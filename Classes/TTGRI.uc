@@ -123,7 +123,7 @@ static simulated function int CompareLevelPoints(TTLevel P1, TTLevel P2)
 		}
 		return (P1.Location.Y < P2.Location.Y ? 1 : -1);
 	}
-	return (P1.Location.X < P2.Location.Y ? 1 : -1);
+	return (P1.Location.X < P2.Location.X ? 1 : -1);
 }
 
 function FindPointZero()
