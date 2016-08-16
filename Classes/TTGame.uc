@@ -697,6 +697,7 @@ defaultproperties
 	MinRespawnDelay=0
 	bGivePhysicsGun=false
 	HUDType=class'TTHud'
+	DefaultPawnClass=class'TTPawn'
 
 	OnlineStatsWriteClass=class'Cruzade.CRZStatsWriteXP'
 	OnlineGameSettingsClass=class'Cruzade.CRZGameSettingsBL'

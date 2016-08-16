@@ -72,22 +72,13 @@ auto state Pickup
 
 	simulated event UnTouch(Actor Other)
 	{
-		local int i;
-
 		if ( Other.IsA('UTPawn') )
 		{
-			for ( i=0; i<Touchers.length; i++ )
+			Touchers.RemoveItem(Other);
+			if ( Touchers.length == 0 )
 			{
-				if ( Touchers[i] == Other )
-				{
-					Touchers.Remove(i,1);
-					if ( Touchers.length == 0 )
-					{
-						//ActiveEffect.DeactivateSystem();
-						ActiveEffect.SetStopSpawning(0, true);
-					}
-					break;
-				}
+				//ActiveEffect.DeactivateSystem();
+				ActiveEffect.SetStopSpawning(0, true);
 			}
 		}
 	}

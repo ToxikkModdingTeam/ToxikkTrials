@@ -19,10 +19,12 @@ CONST STANDING_TIME = 2.0;
 
 
 var GameViewportClient Viewport;
-var TTSpawnTree SpawnTree;
 var TTGRI GRI;
-var GUIRoot Root;
 
+var TTSpawnTree SpawnTree;
+var TTKeytracker Keytracker;
+
+var GUIRoot Root;
 
 struct sTimerGroup
 {
@@ -60,6 +62,7 @@ simulated function PostBeginPlay()
 
 	Viewport = LocalPlayer(PlayerOwner.Player).ViewportClient;
 	SpawnTree = TTSpawnTree(CreateInteraction(class'TTSpawnTree'));
+	Keytracker = TTKeytracker(CreateInteraction(class'TTKeytracker'));
 }
 
 function Interaction CreateInteraction(class<Interaction> IntClass)
@@ -274,8 +277,10 @@ simulated event Tick(float dt)
 	P = UTPawn(PlayerOwner.Pawn);
 
 	//NOTE: fix-workaround for pawn landing issue (clientside-only)
+	/* Experimenting in TTPawn now
 	if ( P != None && P.Physics == PHYS_Walking && P.MultiJumpRemaining < P.MaxMultiJump )
 		P.Landed(Vect(0,0,1), P.Base);
+	*/
 
 	if ( Root != None )
 	{

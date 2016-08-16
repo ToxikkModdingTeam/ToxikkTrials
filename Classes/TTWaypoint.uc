@@ -300,6 +300,11 @@ defaultproperties
 		Sprite=Texture2D'EditorResources.S_Trigger'
 	End Object
 
+	Begin Object Name=CollisionCylinder
+		CollisionRadius=+0064.000000
+		CollisionHeight=+0064.000000
+	End Object
+
 	bProjTarget=false
 	bBlockActors=false
 }

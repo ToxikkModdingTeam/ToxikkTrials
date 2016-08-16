@@ -12,7 +12,7 @@ class TTPlayerlist extends Object
 struct StrictConfig sPlayerData
 {
 	/** Unique Net ID of player */
-	var config String UID;
+	var config String Uid;
 	/** Last known name of player - updated every time he joins server */
 	var config String Name;
 	/** Total points this player has */
@@ -35,17 +35,17 @@ static function TTPlayerlist Load()
 /** Matches up PRI with stored player data (defines TTPRI.Idx) - creates new entry if not found */
 function SyncPlayer(TTPRI PRI)
 {
-	local String UID;
+	local String Uid;
 	local int i;
 
-	UID = class'OnlineSubsystemSteamworks'.static.UniqueNetIdToString(PRI.UniqueId);
+	Uid = class'OnlineSubsystemSteamworks'.static.UniqueNetIdToString(PRI.UniqueId);
 
-	i = Player.Find('UID', UID);
+	i = Player.Find('Uid', Uid);
 	if ( i == INDEX_NONE )
 	{
 		i = Player.Length;
 		Player.Length = i+1;
-		Player[i].UID = UID;
+		Player[i].Uid = Uid;
 		Player[i].TotalPoints = 0;
 	}
 	Player[i].Name = PRI.PlayerName;
