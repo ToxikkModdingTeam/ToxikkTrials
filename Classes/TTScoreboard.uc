@@ -35,16 +35,16 @@ function UpdateField(out array <sb_Row> Rows, byte RowIdx, byte ColIdx, optional
 defaultproperties
 {
 	Columns = ()
-	Columns.Add(( Name="POS",   Align=ALIGN_Left,   MinSize=2, bFieldsHTML=true ))
-	Columns.Add(( Name="ID",    Align=ALIGN_Left,   MinSize=9, Color=0xFFFFFF ))
-	Columns.Add(( Name="FROM",  Align=ALIGN_Left,   MinSize=3 ))
-	Columns.Add(( Name="CLAN",  Align=ALIGN_Left,   MinSize=3 ))
-	Columns.Add(( Name="LVL",   Align=ALIGN_Center, MinSize=2, bFieldsHTML=true ))
+	Columns.Add(( Name="POS",        Align=ALIGN_Left,   MinSize=2, bFieldsHTML=true ))
+	Columns.Add(( Name="PLAYERNAME", Align=ALIGN_Left,   MinSize=9, Color=0xFFFFFF ))
+	Columns.Add(( Name="FROM",       Align=ALIGN_Left,   MinSize=3 ))
+	Columns.Add(( Name="CLAN",       Align=ALIGN_Left,   MinSize=3 ))
+	Columns.Add(( Name="SKILLCLASS", Align=ALIGN_Center, MinSize=2, bFieldsHTML=true ))
 
-	Columns.Add(( Name="GRANK", Align=ALIGN_Center, MinSize=3, bFieldsHTML=true, bHeadHTML=true, Title="<font color='#FF0000'>GPOS</font>" ))
-	Columns.Add(( Name="TOTAL", Align=ALIGN_Center, MinSize=5, bFieldsHTML=true, bHeadHTML=true, Title="<font color='#FF0000'>TOTAL</font>" ))
-	Columns.Add(( Name="MAPPOINTS", Align=ALIGN_Center, MinSize=4, bFieldsHTML=true, bHeadHTML=true, Title="<font color='#FFFF00'>MAP</font>" ))
+	Columns.Add(( Name="GRANK",      Align=ALIGN_Center, MinSize=3, bFieldsHTML=true, bHeadHTML=true, Title="<font color='#FF0000'>GPOS</font>" ))
+	Columns.Add(( Name="TOTAL",      Align=ALIGN_Center, MinSize=5, bFieldsHTML=true, bHeadHTML=true, Title="<font color='#FF0000'>TOTAL</font>" ))
+	Columns.Add(( Name="MAPPOINTS",  Align=ALIGN_Center, MinSize=4, bFieldsHTML=true, bHeadHTML=true, Title="<font color='#FFFF00'>MAP</font>" ))
 
-	Columns.Add(( Name="TIME",  Align=ALIGN_Right,  MinSize=5, bFieldsHTML=true ))
-	Columns.Add(( Name="PING",  Align=ALIGN_Right,  MinSize=3, bFieldsHTML=true ))
+	Columns.Add(( Name="TIME",       Align=ALIGN_Right,  MinSize=5, bFieldsHTML=true ))
+	Columns.Add(( Name="PING",       Align=ALIGN_Right,  MinSize=3, bFieldsHTML=true ))
 }
