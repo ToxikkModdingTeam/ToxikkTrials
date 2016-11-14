@@ -62,7 +62,7 @@ function Initialized()
 
 		j = -1;
 		if ( KeyWidgets[i].Command ~= "GBA_MoveForward" ) j = 0;
-		else if ( KeyWidgets[i].Command ~= "GBA_MoveBackward" ) j = 1;
+		else if ( KeyWidgets[i].Command ~= "GBA_Backward" ) j = 1;
 		else if ( KeyWidgets[i].Command ~= "GBA_StrafeLeft" ) j = 2;
 		else if ( KeyWidgets[i].Command ~= "GBA_StrafeRight" ) j = 3;
 		if ( j != -1 )
@@ -126,7 +126,7 @@ function bool OnKey(int ControllerId, name Key, Object.EInputEvent EventType, op
 	local int i;
 	local String Cmd;
 
-	if ( EventType == IE_Pressed || EventType == IE_Released )
+	if ( PC != None && (EventType == IE_Pressed || EventType == IE_Released) )
 	{
 		Cmd = PC.PlayerInput.GetBind(Key);
 		for ( i=0; i<KeyWidgets.Length; i++ )
@@ -197,7 +197,6 @@ function InitConfig()
 
 	//SaveConfig();
 }
-
 
 
 defaultproperties

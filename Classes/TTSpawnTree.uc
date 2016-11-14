@@ -334,7 +334,16 @@ function bool OnKey(int ControllerId, name Key, EInputEvent EventType, optional 
 			OnClickRoot(None, true);
             return true;
         }
-		return Root.KeyEvent(Key, EventType);
+		if ( Root.KeyEvent(Key, EventType) )
+		{
+			//`Log("[D] " $ String(Key));
+
+			// SPECIAL PRED-CODE
+			if ( Key == 'RightMouseButton' && InStr(PC.PlayerInput.GetBind(Key), "Fire",, true) == INDEX_NONE )
+				return false;
+
+			return true;
+		}
     }
     return false;
 }

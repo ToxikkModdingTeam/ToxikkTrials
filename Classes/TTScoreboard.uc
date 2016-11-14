@@ -5,46 +5,30 @@
 // ----------------
 // by Chatouille
 //================================================================
-class TTScoreboard extends ModularScoreboard;
+class TTScoreboard extends GFxCRZUIScoreBoard;
 
 
-/** Update row for player */
-function UpdateRow(out array <ModularRoster.sb_Row> Rows, byte RowIdx, CRZPlayerReplicationInfo CRZPRI)
-{
+function UpdateField(out array <sb_Row> Rows, byte RowIdx, byte ColIdx, optional string ColName, optional string OverrideText, optional object Content)
+{	
 	local TTPRI PRI;
 
-	PRI = TTPRI(CRZPRI);
-	if ( PRI == None )
+	PRI = TTPRI(Content);
+	if ( PRI != None )
 	{
-		Super.UpdateRow(Rows, RowIdx, CRZPRI);
-		return;
+		Switch (ColName)
+		{
+			case "GRANK":
+				UpdateFieldValue(Rows, RowIdx, ColIdx, PRI.LeaderboardPos != -1 ? ("<font color='#FF0000'>" $ (PRI.LeaderboardPos+1) $ "</font>") : "N/A");
+				return;
+			case "TOTAL":
+				UpdateFieldValue(Rows, RowIdx, ColIdx, PRI.TotalPoints != -1 ? ("<font color='#FF0000'>" $ PRI.TotalPoints $ "</font>") : "N/A");
+				return;
+			case "MAPPOINTS":
+				UpdateFieldValue(Rows, RowIdx, ColIdx, PRI.MapPoints != -1 ? ("<font color='#FFFF00'>" $ PRI.MapPoints $ "</font>") : "N/A");
+				return;
+		}
 	}
-
-	// Highlight myself
-	if ( PRI.IsLocalPlayerPRI() )
-		Rows[RowIdx].Background.SetVisible(true);
-	else
-		Rows[RowIdx].Background.SetVisible(false);
-
-	UpdateField(Rows,RowIdx, "POS", PRI.bOnlySpectator ? "SPC" : class'CRZHud'.static.FormatInteger(PRI.ScoreboardRank,2) );
-
-	UpdateField(Rows,RowIdx, "ID", Left(PRI.PlayerName,9));
-
-	UpdateField(Rows,RowIdx, "FROM", PRI.bBot ? "---" : Caps(Left(PRI.CountryCode,3)) );
-
-	UpdateField(Rows,RowIdx, "CLAN", PRI.ClanTag == "" ? "---" : Caps(Left(PRI.ClanTag,3)) );
-
-	UpdateField(Rows,RowIdx, "LVL", class'CRZHud'.static.FormatInteger(int(PRI.SkillClass), 2));
-
-	UpdateField(Rows,RowIdx, "GRANK", PRI.LeaderboardPos != -1 ? ("<font color='#FF0000'>" $ (PRI.LeaderboardPos+1) $ "</font>") : "N/A");
-
-	UpdateField(Rows,RowIdx, "TOTAL", PRI.TotalPoints != -1 ? ("<font color='#FF0000'>" $ PRI.TotalPoints $ "</font>") : "N/A");
-
-	UpdateField(Rows,RowIdx, "MAPPOINTS", PRI.MapPoints != -1 ? ("<font color='#FFFF00'>" $ PRI.MapPoints $ "</font>") : "N/A");
-
-	UpdateField(Rows,RowIdx, "TIME", class'CRZHud'.static.FormatTime(FMax(0,CRZGameReplicationInfo(PRI.WorldInfo.GRI).GetElapsedTime() - PRI.StartTime)) );
-
-	UpdateField(Rows,RowIdx, "PING", class'CRZHud'.static.FormatPingHexColor(PRI.GetPing()*1000, true));
+	Super.UpdateField(Rows, RowIdx, ColIdx, ColName, OverrideText, Content);
 }
 
 

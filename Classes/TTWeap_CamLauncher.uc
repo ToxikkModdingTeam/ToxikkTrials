@@ -18,19 +18,25 @@ simulated function PlayFiringSound()
 	if ( CurrentFireMode == 0 )
 	{
 		if ( ActiveCam == None )
-			WeaponPlaySound( WeaponFireSnd[0] );
+			WeaponPlaySound(WeaponFireSnd[0]);
 		else
-			WeaponPlaySound( WeaponFireSnd[2] );
+			WeaponLocalSound(WeaponFireSnd[2]);
 	}
 	else if ( ActiveCam != None )
 	{
 		if ( ! IsInCam() )
-			WeaponPlaySound( WeaponFireSnd[1] );
+			WeaponLocalSound(WeaponFireSnd[1]);
 		else
-			WeaponPlaySound( WeaponFireSnd[3] );
+			WeaponLocalSound(WeaponFireSnd[3]);
 	}
 	else
 		WeaponPlaySound( WeaponEmptySnd );
+}
+
+simulated function WeaponLocalSound(SoundCue Sound)
+{
+	if ( Sound != None && Instigator != None && !bSuppressSounds )
+		Instigator.PlaySound(Sound, true);
 }
 
 // Primary : fire a camera projectile, or destroy it
@@ -120,12 +126,12 @@ function byte BestMode()
     return 1;	// prevent bots from being naughty...
 }
 
-simulated function InitWeaponHudElements(CRZHudMovie HUD)
+static function InitWeaponHudElements(CRZHud HUD)
 {
 	Super.InitWeaponHudElements(HUD);
 
-    if ( HUD.WeaponName_TF != None )
-        HUD.WeaponName_TF.SetString("text", "CamLauncher");
+    if ( HUD.HudMovie.WeaponName_TF != None )
+        HUD.HudMovie.WeaponName_TF.SetString("text", "CamLauncher");
 }
 
 defaultproperties

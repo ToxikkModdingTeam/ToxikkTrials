@@ -384,6 +384,13 @@ function CheckGlobalTime(TTPRI PRI)
 					GRI.Globalboard[CurrentRank].Players = Playerlist.Player[PRI.Idx].Name;
 				}
 			}
+			else
+			{
+				if ( Len(GRI.Globalboard[CurrentRank].Players) + Len(Playerlist.Player[PRI.Idx].Name) <= 28 )
+					GRI.Globalboard[CurrentRank].Players $= ", " $ Playerlist.Player[PRI.Idx].Name;
+				else
+					GRI.Globalboard[CurrentRank].Players $= ", ...";
+			}
 
 			MapData.GlobalRecord[i].Rank = CurrentRank;
 			Playerlist.Player[PRI.Idx].TotalPoints += PointsForGlobalRank(CurrentRank);
@@ -410,7 +417,7 @@ function CheckGlobalTime(TTPRI PRI)
 			continue;
 		}
 
-		// Just passing by - keep calculating current time-range and rank
+		// Just passing by - moving on to new time-range
 		else if ( MapData.GlobalRecord[i].Time > CurrentRangeLimit )
 		{
 			CurrentRank ++;
@@ -420,6 +427,14 @@ function CheckGlobalTime(TTPRI PRI)
 				GRI.Globalboard[CurrentRank].TimeRangeLimit = CurrentRangeLimit;
 				GRI.Globalboard[CurrentRank].Players = Playerlist.Player[MapData.GlobalRecord[i].PlayerIdx].Name;
 			}
+		}
+		// Just passing by
+		else
+		{
+			if ( Len(GRI.Globalboard[CurrentRank].Players) + Len(Playerlist.Player[MapData.GlobalRecord[i].PlayerIdx].Name) <= 28 )
+				GRI.Globalboard[CurrentRank].Players $= ", " $ Playerlist.Player[MapData.GlobalRecord[i].PlayerIdx].Name;
+			else
+				GRI.Globalboard[CurrentRank].Players $= ", ...";
 		}
 
 		// Update record Rank if it changed - should only occur for shifted-up ranks.
@@ -451,9 +466,12 @@ function CheckGlobalTime(TTPRI PRI)
 		return;
 
 	// announce
-	if ( bBest ) BroadcastHandler.Broadcast(PRI, PRI.PlayerName @ "has set a new #1 MAP record with" @ class'TTHud'.static.FormatTrialTime(Time), 'Event');
-	else if ( bBeaten ) BroadcastHandler.Broadcast(PRI, PRI.PlayerName @ "beat his personnal MAP record with" @ class'TTHud'.static.FormatTrialTime(Time), 'Event');
-	else if ( bInserted ) BroadcastHandler.Broadcast(PRI, PRI.PlayerName @ "finished the MAP with" @ class'TTHud'.static.FormatTrialTime(Time), 'Event');
+	if ( bBest )
+		BroadcastHandler.Broadcast(PRI, PRI.PlayerName @ "has set a new #1 MAP record with" @ class'TTHud'.static.FormatTrialTime(Time), 'Event');
+	else if ( bBeaten )
+		BroadcastHandler.Broadcast(PRI, PRI.PlayerName @ "beat his personnal MAP record with" @ class'TTHud'.static.FormatTrialTime(Time), 'Event');
+	else if ( bInserted )
+		BroadcastHandler.Broadcast(PRI, PRI.PlayerName @ "finished the MAP with" @ class'TTHud'.static.FormatTrialTime(Time), 'Event');
 
 	// save
 	Playerlist.SaveConfig();
@@ -468,8 +486,10 @@ function CheckGlobalTime(TTPRI PRI)
 
 static function int TimeRangeLimitForTime(int TimeMillis)
 {
-	//? Math.pow(seconds, 1.01)
+	//Disable ranks for now => show all records
+	return TimeMillis;
 
+	//? Math.pow(seconds, 1.01)
 	//? seconds + seconds/20
 	return TimeMillis + (TimeMillis / 20);
 }
@@ -515,6 +535,13 @@ function CheckLevelTime(TTPRI PRI)
 					GRI.Levelboard[LevelIdx].Board[CurrentRank].Players = Playerlist.Player[PRI.Idx].Name;
 				}
 			}
+			else
+			{
+				if ( Len(GRI.Levelboard[LevelIdx].Board[CurrentRank].Players) + Len(Playerlist.Player[PRI.Idx].Name) <= 28 )
+					GRI.Levelboard[LevelIdx].Board[CurrentRank].Players $= ", " $ Playerlist.Player[PRI.Idx].Name;
+				else
+					GRI.Levelboard[LevelIdx].Board[CurrentRank].Players $= ", ...";
+			}
 
 			MapData.Levels[LevelIdx].Record[i].Rank = CurrentRank;
 			Playerlist.Player[PRI.Idx].TotalPoints += PointsForLevelRank(CurrentRank);
@@ -552,6 +579,13 @@ function CheckLevelTime(TTPRI PRI)
 				GRI.Levelboard[LevelIdx].Board[CurrentRank].Players = Playerlist.Player[MapData.Levels[LevelIdx].Record[i].PlayerIdx].Name;
 			}
 		}
+		else
+		{
+			if ( Len(GRI.Levelboard[LevelIdx].Board[CurrentRank].Players) + Len(Playerlist.Player[MapData.Levels[LevelIdx].Record[i].PlayerIdx].Name) <= 28 )
+				GRI.Levelboard[LevelIdx].Board[CurrentRank].Players $= ", " $ Playerlist.Player[MapData.Levels[LevelIdx].Record[i].PlayerIdx].Name;
+			else
+				GRI.Levelboard[LevelIdx].Board[CurrentRank].Players $= ", ...";
+		}
 
 		// Update record Rank if it changed - should only occur for shifted-up ranks.
 		if ( MapData.Levels[LevelIdx].Record[i].Rank != CurrentRank )
@@ -582,9 +616,12 @@ function CheckLevelTime(TTPRI PRI)
 		return;
 
 	// announce
-	if ( bBest ) BroadcastHandler.Broadcast(PRI, PRI.PlayerName @ "has set a new #1" @ PRI.CurrentLevel.LevelDisplayName @ "record with" @ class'TTHud'.static.FormatTrialTime(Time), 'Event');
-	else if ( bBeaten ) BroadcastHandler.Broadcast(PRI, PRI.PlayerName @ "beat his personnal" @ PRI.CurrentLevel.LevelDisplayName @ "record with" @ class'TTHud'.static.FormatTrialTime(Time), 'Event');
-	else if ( bInserted ) BroadcastHandler.Broadcast(PRI, PRI.PlayerName @ "finished" @ PRI.CurrentLevel.LevelDisplayName @ "with" @ class'TTHud'.static.FormatTrialTime(Time), 'Event');
+	if ( bBest )
+		BroadcastHandler.Broadcast(PRI, PRI.PlayerName @ "has set a new #1" @ PRI.CurrentLevel.LevelDisplayName @ "record with" @ class'TTHud'.static.FormatTrialTime(Time), 'Event');
+	else if ( bBeaten )
+		BroadcastHandler.Broadcast(PRI, PRI.PlayerName @ "beat his personnal" @ PRI.CurrentLevel.LevelDisplayName @ "record with" @ class'TTHud'.static.FormatTrialTime(Time), 'Event');
+	else if ( bInserted )
+		BroadcastHandler.Broadcast(PRI, PRI.PlayerName @ "finished" @ PRI.CurrentLevel.LevelDisplayName @ "with" @ class'TTHud'.static.FormatTrialTime(Time), 'Event');
 
 	// save
 	Playerlist.SaveConfig();
@@ -655,6 +692,346 @@ function PlayEndOfMatchMessage()
 	// everyone wins because yes
 	foreach WorldInfo.AllControllers(class'UTPlayerController', PC)
 		PC.ClientPlayAnnouncement(VictoryMessageClass, 2);
+}
+
+
+//================================================
+// Admin
+//================================================
+
+exec function DeleteGlobalBest()
+{
+	local int i;
+	local int CurrentRank, CurrentRangeLimit;
+	local TTPRI OtherPRI;
+
+	if ( MapData.GlobalRecord.Length == 0 )
+		return;
+
+	// Remove #1 record and update owning player's points
+	Playerlist.Player[MapData.GlobalRecord[0].PlayerIdx].TotalPoints -= PointsForGlobalRank(0);
+	MapData.GlobalRecord.Remove(0,1);
+
+	OtherPRI = Playerlist.Player[MapData.GlobalRecord[0].PlayerIdx].PRI;
+	if ( OtherPRI != None )
+	{
+		OtherPRI.MapPoints -= PointsForGlobalRank(0);
+		OtherPRI.TotalPoints = Playerlist.Player[OtherPRI.Idx].TotalPoints;
+	}
+
+	// Update the rest of the board
+	CurrentRangeLimit = 0;
+	CurrentRank = -1;
+	for ( i=0; i<MapData.GlobalRecord.Length; i++ )
+	{
+		// Moving on to new time-range
+		if ( MapData.GlobalRecord[i].Time > CurrentRangeLimit )
+		{
+			CurrentRank ++;
+			CurrentRangeLimit = TimeRangeLimitForTime(MapData.GlobalRecord[i].Time);
+			if ( CurrentRank < GRI.GLOBALBOARD_SIZE )
+			{
+				GRI.Globalboard[CurrentRank].TimeRangeLimit = CurrentRangeLimit;
+				GRI.Globalboard[CurrentRank].Players = Playerlist.Player[MapData.GlobalRecord[i].PlayerIdx].Name;
+			}
+		}
+		// Just passing by
+		else
+		{
+			if ( Len(GRI.Globalboard[CurrentRank].Players) + Len(Playerlist.Player[MapData.GlobalRecord[i].PlayerIdx].Name) <= 28 )
+				GRI.Globalboard[CurrentRank].Players $= ", " $ Playerlist.Player[MapData.GlobalRecord[i].PlayerIdx].Name;
+			else
+				GRI.Globalboard[CurrentRank].Players $= ", ...";
+		}
+
+		// Several records must have been shifted down
+		if ( MapData.GlobalRecord[i].Rank != CurrentRank )
+		{
+			Playerlist.Player[MapData.GlobalRecord[i].PlayerIdx].TotalPoints -= PointsForGlobalRank(MapData.GlobalRecord[i].Rank);
+			MapData.GlobalRecord[i].Rank = CurrentRank;
+			Playerlist.Player[MapData.GlobalRecord[i].PlayerIdx].TotalPoints += PointsForGlobalRank(MapData.GlobalRecord[i].Rank);
+
+			OtherPRI = Playerlist.Player[MapData.GlobalRecord[i].PlayerIdx].PRI;
+			if ( OtherPRI != None )
+			{
+				OtherPRI.MapPoints += (Playerlist.Player[OtherPRI.Idx].TotalPoints - OtherPRI.TotalPoints);
+				OtherPRI.TotalPoints = Playerlist.Player[OtherPRI.Idx].TotalPoints;
+			}
+		}
+	}
+
+	// announce
+	AdminEvent(None, "Global map record #1 has been deleted !");
+
+	// save
+	Playerlist.SaveConfig();
+	MapData.SaveConfig();
+
+	if ( WorldInfo.NetMode == NM_Standalone || WorldInfo.NetMode == NM_ListenServer )
+		GRI.ReplicatedEvent('Globalboard');
+
+	UpdateLeaderboard();
+}
+
+exec function GetLevel()
+{
+	local PlayerController PC;
+
+	foreach WorldInfo.AllControllers(class'PlayerController', PC)
+	{
+		if ( WorldInfo.NetMode == NM_Standalone || AccessControl.IsAdmin(PC) )
+			PC.ClientMessage("[A] Current Level idx : " $ TTPRI(PC.PlayerReplicationInfo).CurrentLevel);
+	}
+}
+
+exec function DeleteLevelBest(int LevelIdx)
+{
+	local int i;
+	local int CurrentRank, CurrentRangeLimit;
+	local TTPRI OtherPRI;
+
+	if ( LevelIdx < 0 || LevelIdx >= MapData.Levels.Length )
+		AdminEvent(None, "Unrecognized level idx");
+
+	if ( MapData.Levels[LevelIdx].Record.Length == 0 )
+		return;
+
+	// Remove #1 record and update owning player's points
+	Playerlist.Player[MapData.Levels[LevelIdx].Record[0].PlayerIdx].TotalPoints -= PointsForLevelRank(0);
+	MapData.Levels[LevelIdx].Record.Remove(0,1);
+
+	OtherPRI = Playerlist.Player[MapData.Levels[LevelIdx].Record[0].PlayerIdx].PRI;
+	if ( OtherPRI != None )
+	{
+		OtherPRI.MapPoints -= PointsForLevelRank(0);
+		OtherPRI.TotalPoints = Playerlist.Player[OtherPRI.Idx].TotalPoints;
+	}
+
+	// Update the rest of the board
+	CurrentRangeLimit = 0;
+	CurrentRank = -1;
+	for ( i=0; i<=MapData.Levels[LevelIdx].Record.Length; i++ )
+	{
+		// Moving on to new time-range
+		if ( MapData.Levels[LevelIdx].Record[i].Time > CurrentRangeLimit )
+		{
+			CurrentRank ++;
+			CurrentRangeLimit = TimeRangeLimitForTime(MapData.Levels[LevelIdx].Record[i].Time);
+			if ( LevelIdx < GRI.MAX_LEVELBOARDS && CurrentRank < GRI.LEVELBOARD_SIZE )
+			{
+				GRI.Levelboard[LevelIdx].Board[CurrentRank].TimeRangeLimit = CurrentRangeLimit;
+				GRI.Levelboard[LevelIdx].Board[CurrentRank].Players = Playerlist.Player[MapData.Levels[LevelIdx].Record[i].PlayerIdx].Name;
+			}
+		}
+		else
+		{
+			if ( Len(GRI.Levelboard[LevelIdx].Board[CurrentRank].Players) + Len(Playerlist.Player[MapData.Levels[LevelIdx].Record[i].PlayerIdx].Name) <= 28 )
+				GRI.Levelboard[LevelIdx].Board[CurrentRank].Players $= ", " $ Playerlist.Player[MapData.Levels[LevelIdx].Record[i].PlayerIdx].Name;
+			else
+				GRI.Levelboard[LevelIdx].Board[CurrentRank].Players $= ", ...";
+		}
+
+		// Several records must have been shifted down
+		if ( MapData.Levels[LevelIdx].Record[i].Rank != CurrentRank )
+		{
+			Playerlist.Player[MapData.Levels[LevelIdx].Record[i].PlayerIdx].TotalPoints -= PointsForLevelRank(MapData.Levels[LevelIdx].Record[i].Rank);
+			MapData.Levels[LevelIdx].Record[i].Rank = CurrentRank;
+			Playerlist.Player[MapData.Levels[LevelIdx].Record[i].PlayerIdx].TotalPoints += PointsForLevelRank(MapData.Levels[LevelIdx].Record[i].Rank);
+
+			OtherPRI = Playerlist.Player[MapData.Levels[LevelIdx].Record[i].PlayerIdx].PRI;
+			if ( OtherPRI != None )
+			{
+				OtherPRI.MapPoints += (Playerlist.Player[OtherPRI.Idx].TotalPoints - OtherPRI.TotalPoints);
+				OtherPRI.TotalPoints = Playerlist.Player[OtherPRI.Idx].TotalPoints;
+			}
+		}
+	}
+
+	// announce
+	AdminEvent(None, GRI.LevelPoints[LevelIdx].LevelDisplayName @ "record #1 has been deleted !");
+
+	// save
+	Playerlist.SaveConfig();
+	MapData.Levels[LevelIdx].SaveConfig();
+
+	if ( WorldInfo.NetMode == NM_Standalone || WorldInfo.NetMode == NM_ListenServer )
+		GRI.ReplicatedEvent('Levelboard');
+
+	UpdateLeaderboard();
+}
+
+exec function WipeGlobalRecords()
+{
+	local int i;
+	local TTPRI OtherPRI;
+
+	if ( MapData.GlobalRecord.Length == 0 )
+		return;
+
+	while ( MapData.GlobalRecord.Length > 0 )
+	{
+		// Remove #1 record and update owning player's points
+		Playerlist.Player[MapData.GlobalRecord[0].PlayerIdx].TotalPoints -= PointsForGlobalRank(0);
+		MapData.GlobalRecord.Remove(0,1);
+
+		OtherPRI = Playerlist.Player[MapData.GlobalRecord[0].PlayerIdx].PRI;
+		if ( OtherPRI != None )
+		{
+			OtherPRI.MapPoints -= PointsForGlobalRank(0);
+			OtherPRI.TotalPoints = Playerlist.Player[OtherPRI.Idx].TotalPoints;
+		}
+	}
+
+	// Clear board
+	for ( i=0; i<GRI.GLOBALBOARD_SIZE; i++ )
+	{
+		GRI.Globalboard[i].TimeRangeLimit = 0;
+		GRI.Globalboard[i].Players = "";
+	}
+
+	// announce
+	AdminEvent(None, "Global map records have been wiped !");
+
+	// save
+	Playerlist.SaveConfig();
+	MapData.SaveConfig();
+
+	if ( WorldInfo.NetMode == NM_Standalone || WorldInfo.NetMode == NM_ListenServer )
+		GRI.ReplicatedEvent('Globalboard');
+
+	UpdateLeaderboard();
+}
+
+exec function WipeLevelRecords(int LevelIdx)
+{
+	local int i;
+	local TTPRI OtherPRI;
+
+	if ( LevelIdx < 0 || LevelIdx >= MapData.Levels.Length )
+		AdminEvent(None, "Unrecognized level idx");
+
+	if ( MapData.Levels[LevelIdx].Record.Length == 0 )
+		return;
+
+	while ( MapData.Levels[LevelIdx].Record.Length > 0 )
+	{
+		// Remove #1 record and update owning player's points
+		Playerlist.Player[MapData.Levels[LevelIdx].Record[0].PlayerIdx].TotalPoints -= PointsForLevelRank(0);
+		MapData.Levels[LevelIdx].Record.Remove(0,1);
+
+		OtherPRI = Playerlist.Player[MapData.Levels[LevelIdx].Record[0].PlayerIdx].PRI;
+		if ( OtherPRI != None )
+		{
+			OtherPRI.MapPoints -= PointsForLevelRank(0);
+			OtherPRI.TotalPoints = Playerlist.Player[OtherPRI.Idx].TotalPoints;
+		}
+	}
+
+	// Clear board
+	if ( LevelIdx < GRI.MAX_LEVELBOARDS )
+	{
+		for ( i=0; i<GRI.LEVELBOARD_SIZE; i++ )
+		{
+			GRI.Levelboard[LevelIdx].Board[i].TimeRangeLimit = 0;
+			GRI.Levelboard[LevelIdx].Board[i].Players = "";
+		}
+	}
+
+	// announce
+	AdminEvent(None, GRI.LevelPoints[LevelIdx].LevelDisplayName @ "records have been wiped !");
+
+	// save
+	Playerlist.SaveConfig();
+	MapData.Levels[LevelIdx].SaveConfig();
+
+	if ( WorldInfo.NetMode == NM_Standalone || WorldInfo.NetMode == NM_ListenServer )
+		GRI.ReplicatedEvent('Levelboard');
+
+	UpdateLeaderboard();
+}
+
+//TODO: This will have to be split over several Ticks
+exec function RecalculateAllRecords()
+{
+	local TTMaplist StoredMaplist;
+	local int i;
+
+	AdminEvent(None, "Recalculating all map records...");
+
+	StoredMaplist = class'TTMaplist'.static.Load();
+
+	for ( i=0; i<StoredMaplist.Map.Length; i++ )
+		RecalculateAll_Map( class'TTMapData'.static.Load(StoredMaplist.Map[i]) );
+
+	// save
+	Playerlist.SaveConfig();
+
+	AdminEvent(None, "Recalculation finished - map restart required !");
+}
+
+function RecalculateAll_Map(TTMapData OtherMapData)
+{
+	local int i;
+	local int CurrentRank, CurrentRangeLimit;
+
+	CurrentRangeLimit = 0;
+	CurrentRank = -1;
+	for ( i=0; i<OtherMapData.GlobalRecord.Length; i++ )
+	{
+		// Moving on to new time-range
+		if ( OtherMapData.GlobalRecord[i].Time > CurrentRangeLimit )
+		{
+			CurrentRank ++;
+			CurrentRangeLimit = TimeRangeLimitForTime(OtherMapData.GlobalRecord[i].Time);
+		}
+		// Check if rank has moved
+		if ( OtherMapData.GlobalRecord[i].Rank != CurrentRank )
+		{
+			AdminEvent(None, "Modified record ("$Mid(OtherMapData.Name,6)$") PID="$OtherMapData.GlobalRecord[i].PlayerIdx@"RANK:"@OtherMapData.GlobalRecord[i].Rank@"->"@CurrentRank);
+			Playerlist.Player[OtherMapData.GlobalRecord[i].PlayerIdx].TotalPoints -= PointsForLevelRank(OtherMapData.GlobalRecord[i].Rank);
+			OtherMapData.GlobalRecord[i].Rank = CurrentRank;
+			Playerlist.Player[OtherMapData.GlobalRecord[i].PlayerIdx].TotalPoints += PointsForLevelRank(OtherMapData.GlobalRecord[i].Rank);
+		}
+	}
+	// save
+	OtherMapData.SaveConfig();
+
+	for ( i=0; i<OtherMapData.Levels.Length; i++ )
+		RecalculateAll_Level(OtherMapData.Levels[i]);
+}
+
+function RecalculateAll_Level(TTLevelData OtherLevelData)
+{
+	local int i;
+	local int CurrentRank, CurrentRangeLimit;
+
+	CurrentRangeLimit = 0;
+	CurrentRank = -1;
+	for ( i=0; i<OtherLevelData.Record.Length; i++ )
+	{
+		// Moving on to new time-range
+		if ( OtherLevelData.Record[i].Time > CurrentRangeLimit )
+		{
+			CurrentRank ++;
+			CurrentRangeLimit = TimeRangeLimitForTime(OtherLevelData.Record[i].Time);
+		}
+		// Check if rank has moved
+		if ( OtherLevelData.Record[i].Rank != CurrentRank )
+		{
+			AdminEvent(None, "Modified record ("$Mid(OtherLevelData.Name,8)$") PID="$OtherLevelData.Record[i].PlayerIdx@"RANK:"@OtherLevelData.Record[i].Rank@"->"@CurrentRank);
+			Playerlist.Player[OtherLevelData.Record[i].PlayerIdx].TotalPoints -= PointsForLevelRank(OtherLevelData.Record[i].Rank);
+			OtherLevelData.Record[i].Rank = CurrentRank;
+			Playerlist.Player[OtherLevelData.Record[i].PlayerIdx].TotalPoints += PointsForLevelRank(OtherLevelData.Record[i].Rank);
+		}
+	}
+	// save
+	OtherLevelData.SaveConfig();
+}
+
+function AdminEvent(PlayerReplicationInfo Sender, String Msg)
+{
+	`Log("[TR]" @ Msg);
+	Broadcast(Sender, "[A]" @ Msg, 'Event');
 }
 
 

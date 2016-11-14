@@ -66,8 +66,10 @@ var array<TTSavepoint> GlobalReachedSavepoints;
 
 Replication
 {
-	if ( bNetInitial || bNetDirty )
-		bHasCS, bForbiddenObj, CurrentLevel, LeaderboardPos, TotalPoints, MapPoints, bStopGlobal;
+	if ( bNetInitial && bNetDirty )
+		bHasCS, bForbiddenObj, LeaderboardPos, TotalPoints, MapPoints;
+	if ( bNetOwner && (bNetInitial || bNetDirty) )
+		CurrentLevel, bStopGlobal;
 }
 
 
@@ -207,7 +209,9 @@ function SendTimerSync()
 	ClientSyncTimers(Now-LevelStartDate, Now-GlobalStartDate);
 }
 
-reliable client function ClientSyncTimers(int LevelMillis, int GlobalMillis)
+// unreliable gives better results
+// reliable will resend lost packets, but those will have a bigger delay => estimation mistake
+unreliable client function ClientSyncTimers(int LevelMillis, int GlobalMillis)
 {
 	local int Now, EstimatedLevelStart, EstimatedGlobalStart;
 

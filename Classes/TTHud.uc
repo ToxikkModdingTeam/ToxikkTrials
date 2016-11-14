@@ -151,7 +151,7 @@ function UpdateGlobalboard()
 			break;
 
 		data[0] = Right("0"$(i+1)$".",3);
-		data[1] = "<"@FormatTrialTime(GRI.Globalboard[i].TimeRangeLimit);
+		data[1] = /*"<"@*/FormatTrialTime(GRI.Globalboard[i].TimeRangeLimit);
 		data[2] = ""$class'TTGame'.static.PointsForGlobalRank(i);
 		data[3] = GRI.Globalboard[i].Players;
 
@@ -193,7 +193,7 @@ function UpdateLevelboard()
 				break;
 
 			data[0] = Right("0"$(i+1)$".",3);
-			data[1] = "<"@FormatTrialTime(GRI.Levelboard[Idx].Board[i].TimeRangeLimit);
+			data[1] = /*"<"@*/FormatTrialTime(GRI.Levelboard[Idx].Board[i].TimeRangeLimit);
 			data[2] = ""$class'TTGame'.static.PointsForLevelRank(i);
 			data[3] = GRI.Levelboard[Idx].Board[i].Players;
 
