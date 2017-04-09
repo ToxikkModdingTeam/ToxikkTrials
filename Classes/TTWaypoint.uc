@@ -71,6 +71,7 @@ simulated function Init(TTGRI GRI)
 	}
 
 	// build list of referencing points
+	PreviousPoints.Length = 0;
 	for ( i=0; i<GRI.AllPoints.Length; i++ )
 		for ( j=0; j<GRI.AllPoints[i].NextPoints.Length; j++ )
 			if ( GRI.AllPoints[i].NextPoints[j] == Self )
@@ -105,7 +106,42 @@ simulated function WaitForLocalPC()
 
 simulated function FoundLocalPC(PlayerController PC)
 {
-	PC.myHUD.AddPostRenderedActor(Self);
+	if ( PC.myHUD.PostRenderedActors.Find(Self) == INDEX_NONE )
+		PC.myHUD.AddPostRenderedActor(Self);
+}
+
+simulated event Destroyed()
+{
+	local PlayerController PC;
+	local int i;
+
+	foreach WorldInfo.AllControllers(class'PlayerController', PC)
+	{
+		if ( TTPRI(PC.PlayerReplicationInfo) != None )
+			TTPRI(PC.PlayerReplicationInfo).TargetWp.RemoveItem(Self);
+	}
+
+	PC = GetALocalPlayerController();
+	if ( PC != None )
+	{
+		if ( TTPRI(PC.PlayerReplicationInfo) != None )
+			TTPRI(PC.PlayerReplicationInfo).TargetWp.RemoveItem(Self);
+		if ( PC.myHUD != None )
+			PC.myHUD.RemovePostRenderedActor(Self);
+		if ( TTHud(PC.myHUD) != None )
+			TTHud(PC.myHUD).SpawnTree.Rebuild();
+	}
+
+	if ( TTGRI(WorldInfo.GRI) != None )
+		TTGRI(WorldInfo.GRI).AllPoints.RemoveItem(Self);
+
+	for ( i=0; i<PreviousPoints.Length; i++ )
+	{
+		if ( PreviousPoints[i] != None )
+			PreviousPoints[i].NextPoints.RemoveItem(Self);
+	}
+
+	Super.Destroyed();
 }
 
 event Touch(Actor Other, PrimitiveComponent OtherComp, vector HitLocation, vector HitNormal)

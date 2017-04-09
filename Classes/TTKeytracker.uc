@@ -12,6 +12,8 @@ var GameViewportClient Viewport;
 var PlayerController PC;
 var GUIRoot Root;
 
+var TTConfigMenu Conf;
+
 struct StrictConfig sKeyWidget
 {
 	var config String Label;
@@ -21,15 +23,10 @@ struct StrictConfig sKeyWidget
 };
 
 var config array<sKeyWidget> KeyWidgets;
-var config String pos;
-var config float Alpha;
 
 var GUIGroup Container;
 
-// hardcoded dodge handling
 var GUIGroup Dodges[4];
-var Actor.EDoubleClickDir LastDClick;
-var bool bJustDodged;
 
 
 function Initialized()
@@ -37,11 +34,13 @@ function Initialized()
 	local int i, j;
 	local Vector2D ContainerSize;
 
-	if ( pos == "" )
+	if ( KeyWidgets.length == 0 )
 		InitConfig();
 
     Viewport = GameViewportClient(Outer);
     PC = Viewport.GetPlayerOwner(0).Actor;
+
+	Conf = TTConfigMenu(class'ClientConfigMenuManager'.static.FindCCM(PC).AddMenuInteraction(class'TTConfigMenu'));
 
     Root = class'GUIRoot'.static.Create(Self, Viewport);
 
@@ -74,50 +73,51 @@ function Initialized()
 		}
 	}
 
-	Container.SetPosAuto(pos);
+	Container.SetPosAuto(Conf.Keytracker_pos);
 	Container.SetPosAuto("width:" $ ContainerSize.X $ "; height:" $ ContainerSize.Y);
+	Container.SetAlpha(Conf.Keytracker_alpha);
+
+	Conf.pw_Keytracker.OnMoved = ChangeKeytrackerPos;
+	Conf.s_KeytrackerAlpha.OnChanging = ChangeKeytrackerAlpha;
 }
 
+function ChangeKeytrackerPos(GUIDraggable elem)
+{
+	Container.SetPosAuto(GUIPosWidget(elem).GetBestAutoPos());
+}
+
+function ChangeKeytrackerAlpha(GUISlider elem)
+{
+	Container.SetAlpha(elem.Value);
+}
+
+function Dodge(EDoubleClickDir Dir)
+{
+	local int i;
+	Switch (Dir)
+	{
+		case DCLICK_Forward: i = 0; break;
+		case DCLICK_Back: i = 1; break;
+		case DCLICK_Left: i = 2; break;
+		case DCLICK_Right: i = 3; break;
+		default: i = -1;
+	}
+	if ( i != -1 )
+	{
+		Dodges[i].SetAlpha(1.0);
+		Dodges[i].AlphaTo(0.0, 0.8, ANIM_EASE_OUT);
+	}
+}
 
 event Tick(float dt)
 {
-	local int i;
-
-	if ( PC != None && PC.Pawn != None )
-	{
-		if ( PC.DoubleClickDir == DCLICK_ACTIVE )
-		{
-			if ( !bJustDodged )
-			{
-				Switch (LastDClick)
-				{
-					case DCLICK_Forward:	i = 0; break;
-					case DCLICK_Back:		i = 1; break;
-					case DCLICK_Left:		i = 2; break;
-					case DCLICK_Right:		i = 3; break;
-					default: i = -1;
-				}
-				if ( i != -1 )
-				{
-					Dodges[i].SetAlpha(1.0);
-					Dodges[i].AlphaTo(0.0, 0.8, ANIM_EASE_OUT);
-				}
-				bJustDodged = true;
-			}
-		}
-		else
-		{
-			bJustDodged = false;
-			LastDClick = PC.DoubleClickDir;
-		}
-
+	if ( PC != None && PC.Pawn != None && !PC.WorldInfo.GRI.bMatchIsOver )
 		Root.Tick(dt);
-	}
 }
 
 event PostRender(Canvas C)
 {
-	if ( PC != None && PC.Pawn != None )
+	if ( PC != None && PC.Pawn != None && !PC.WorldInfo.GRI.bMatchIsOver )
 		Root.PostRender(C);
 }
 
@@ -190,10 +190,6 @@ function InitConfig()
 	KeyWidgets[8].Label = "2";
 	KeyWidgets[8].Command = "GBA_AltFire";
 	KeyWidgets[8].pos = "left:218; top:58; width:20; height:40";
-
-	pos = "right:100%-32; center-y:50%";
-
-	Alpha = 1.0;
 
 	//SaveConfig();
 }

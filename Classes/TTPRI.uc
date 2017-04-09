@@ -66,7 +66,7 @@ var array<TTSavepoint> GlobalReachedSavepoints;
 
 Replication
 {
-	if ( bNetInitial && bNetDirty )
+	if ( bNetInitial || bNetDirty )
 		bHasCS, bForbiddenObj, LeaderboardPos, TotalPoints, MapPoints;
 	if ( bNetOwner && (bNetInitial || bNetDirty) )
 		CurrentLevel, bStopGlobal;

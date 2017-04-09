@@ -15,16 +15,22 @@ CONST COL_PLAYERS_WIDTH = 200;
 CONST COL_TOTAL_WIDTH = 80;
 CONST COL_NAME_WIDTH = 140;
 
-CONST STANDING_TIME = 2.0;
-
 
 var GameViewportClient Viewport;
 var TTGRI GRI;
 
+var TTConfigMenu Conf;
+
 var TTSpawnTree SpawnTree;
 var TTKeytracker Keytracker;
+var TTSpeedometer Speedometer;
 
 var GUIRoot Root;
+var bool bHide;
+
+var GUIGroup grp_Timers;
+var GUIGroup grp_Boards;
+var GUIGroup grp_Leaderboard;
 
 struct sTimerGroup
 {
@@ -34,7 +40,6 @@ struct sTimerGroup
 };
 var sTimerGroup GlobalTimer;
 var sTimerGroup LevelTimer;
-
 
 var GUIBoard Globalboard;
 var bool bUpdateGlobalboard;
@@ -60,9 +65,12 @@ simulated function PostBeginPlay()
 {
 	Super.PostBeginPlay();
 
+	Conf = TTConfigMenu(class'ClientConfigMenuManager'.static.FindCCM(PlayerOwner).AddMenuInteraction(class'TTConfigMenu'));
+
 	Viewport = LocalPlayer(PlayerOwner.Player).ViewportClient;
 	SpawnTree = TTSpawnTree(CreateInteraction(class'TTSpawnTree'));
 	Keytracker = TTKeytracker(CreateInteraction(class'TTKeytracker'));
+	Speedometer = TTSpeedometer(CreateInteraction(class'TTSpeedometer'));
 }
 
 function Interaction CreateInteraction(class<Interaction> IntClass)
@@ -91,20 +99,32 @@ function CreateElements(Canvas C)
 
 	Root = class'GUIRoot'.static.Create(Self, Viewport);
 
-	CreateTimerGroup(C, GlobalTimer, "- GLOBAL MAP TIME -", "top:32; right:100%-32; width:200; height:64");
+	grp_Timers = class'GUIGroup'.static.CreateGroup(Root);
+	grp_Timers.SetPosAuto(Conf.Timers_pos);
+	grp_Timers.SetPosAuto("width:200; height:144");
+	grp_Timers.SetAlpha(Conf.Timers_alpha);
+	Conf.pw_Timers.OnMoved = ChangeTimersPos;
+	Conf.s_TimersAlpha.OnChanging = ChangeTimersAlpha;
 
-	CreateTimerGroup(C, LevelTimer, "- CURRENT LEVEL -", "top:112; right:100%-32; width:200; height:64");
+	CreateTimerGroup(C, GlobalTimer, "- GLOBAL MAP TIME -", "top:0; left:0; width:100%; height:64");
+	CreateTimerGroup(C, LevelTimer, "- CURRENT LEVEL -", "top:80; left:0; width:100%; height:64");
 
-	Globalboard = class'GUIBoard'.static.CreateBoard(Root, "- MAP TIME RANKS -");
-	Globalboard.SetPosAuto("right:100%-32; top:112");
+	grp_Boards = class'GUIGroup'.static.CreateGroup(Root);
+	grp_Boards.SetPosAuto(Conf.Boards_pos);
+	grp_Boards.SetAlpha(Conf.Boards_alpha);
+	Conf.pw_Boards.OnMoved = ChangeBoardsPos;
+	Conf.s_BoardsAlpha.OnChanging = ChangeBoardsAlpha;
+
+	Globalboard = class'GUIBoard'.static.CreateBoard(grp_Boards, "- MAP TIME RANKS -");
+	Globalboard.SetPosAuto("left:0; top:0");
 	Globalboard.AddColumn("RNK", COL_POS_WIDTH, ALIGN_CENTER);
 	Globalboard.AddColumn("TIME", COL_TIME_WIDTH, ALIGN_CENTER);
 	Globalboard.AddColumn("PTS", COL_POINTS_WIDTH, ALIGN_CENTER);
 	Globalboard.AddColumn("PLAYERS", COL_PLAYERS_WIDTH, ALIGN_LEFT);
 	bUpdateGlobalboard = true;
 
-	Levelboard = class'GUIBoard'.static.CreateBoard(Root, "- CURRENT LEVEL RANKS -");
-	Levelboard.SetPosAuto("right:100%-32; top:" $ (Root.CurTargetFloat(Globalboard.offY) + Root.CurTargetFloat(Globalboard.offH) + 16));
+	Levelboard = class'GUIBoard'.static.CreateBoard(grp_Boards, "- CURRENT LEVEL RANKS -");
+	Levelboard.SetPosAuto("top:" $ (Root.CurTargetFloat(Globalboard.offY) + Root.CurTargetFloat(Globalboard.offH) + 16));
 	Levelboard.AddColumn("RNK", COL_POS_WIDTH, ALIGN_CENTER);
 	Levelboard.AddColumn("TIME", COL_TIME_WIDTH, ALIGN_CENTER);
 	Levelboard.AddColumn("PTS", COL_POINTS_WIDTH, ALIGN_CENTER);
@@ -112,8 +132,16 @@ function CreateElements(Canvas C)
 	Levelboard.iData.AddItem(-1);
 	bUpdateLevelboard = true;
 
-	Leaderboard = class'GUIBoard'.static.CreateBoard(Root, "- GLOBAL LEADERBOARD -");
-	Leaderboard.SetPosAuto("left:32; center-y:50%");
+	grp_Boards.SetPosAuto("width:" $ FMax(Globalboard.offW.Val, Levelboard.offW.Val));
+
+	grp_Leaderboard = class'GUIGroup'.static.CreateGroup(Root);
+	grp_Leaderboard.SetPosAuto(Conf.Leaderboard_pos);
+	grp_Leaderboard.SetAlpha(Conf.Leaderboard_alpha);
+	Conf.pw_Leaderboard.OnMoved = ChangeLeaderboardPos;
+	Conf.s_LeaderboardAlpha.OnChanging = ChangeLeaderboardAlpha;
+
+	Leaderboard = class'GUIBoard'.static.CreateBoard(grp_Leaderboard, "- GLOBAL LEADERBOARD -");
+	Leaderboard.SetPosAuto("left:0; top:0");
 	Leaderboard.AddColumn("POS", COL_POS_WIDTH, ALIGN_CENTER);
 	Leaderboard.AddColumn("TOTAL", COL_TOTAL_WIDTH, ALIGN_CENTER);
 	Leaderboard.AddColumn("PLAYER", COL_NAME_WIDTH, ALIGN_LEFT);
@@ -124,7 +152,7 @@ function CreateElements(Canvas C)
 
 function CreateTimerGroup(Canvas C, out sTimerGroup Group, String Title, String PosAuto)
 {
-	Group.grp = class'GUIGroup'.static.CreateGroup(Root);
+	Group.grp = class'GUIGroup'.static.CreateGroup(grp_Timers);
 	Group.grp.SetColors(class'GUIBoard'.default.BgColor.Val, Root.TRANSPARENT);
 	Group.grp.SetPosAuto(PosAuto);
 
@@ -137,6 +165,33 @@ function CreateTimerGroup(Canvas C, out sTimerGroup Group, String Title, String 
 	Group.timer.SizeToFit(C);
 	Group.timer.SetPosAuto("bottom:100%-8; center-x:50%; width:100%");
 	Group.timer.SetTextAlign(ALIGN_CENTER, ALIGN_TOP);
+}
+
+function ChangeTimersPos(GUIDraggable elem)
+{
+	grp_Timers.SetPosAuto(GUIPosWidget(elem).GetBestAutoPos());
+}
+function ChangeTimersAlpha(GUISlider elem)
+{
+	grp_Timers.SetAlpha(elem.Value);
+}
+
+function ChangeBoardsPos(GUIDraggable elem)
+{
+	grp_Boards.SetPosAuto(GUIPosWidget(elem).GetBestAutoPos());
+}
+function ChangeBoardsAlpha(GUISlider elem)
+{
+	grp_Boards.SetAlpha(elem.Value);
+}
+
+function ChangeLeaderboardPos(GUIDraggable elem)
+{
+	grp_Leaderboard.SetPosAuto(GUIPosWidget(elem).GetBestAutoPos());
+}
+function ChangeLeaderboardAlpha(GUISlider elem)
+{
+	grp_Leaderboard.SetAlpha(elem.Value);
 }
 
 function UpdateGlobalboard()
@@ -295,20 +350,25 @@ simulated event Tick(float dt)
 			// Switch displaymodes
 			if ( P == None || P.IsInState('Dead') )
 				SetDisplayMode(TTDM_Dead);
-			else if ( PRI.bStopGlobal && PRI.CurrentLevel == None )
-				SetDisplayMode(TTDM_Boards);
-			else if ( P.Location == PreviousPos )
+			else if ( Conf.bAutoBoards )
 			{
-				TimeStanding += dt;
-				if ( TimeStanding > STANDING_TIME )
+				if ( PRI.bStopGlobal && PRI.CurrentLevel == None )
 					SetDisplayMode(TTDM_Boards);
+				else if ( P.Location == PreviousPos )
+				{
+					TimeStanding += dt;
+					if ( TimeStanding > Conf.AutoBoardsDelay )
+						SetDisplayMode(TTDM_Boards);
+				}
+				else
+				{
+					SetDisplayMode(TTDM_Timers);
+					TimeStanding = 0;
+					PreviousPos = P.Location;
+				}
 			}
-			else
-			{
+			else if ( CurrentDisplayMode == TTDM_Dead )
 				SetDisplayMode(TTDM_Timers);
-				TimeStanding = 0;
-				PreviousPos = P.Location;
-			}
 		}
 		Root.Tick(dt);
 	}
@@ -344,7 +404,6 @@ function SetDisplayMode(eTTDisplayMode Mode)
 			break;
 
 		// dead - hide level timer, show everything else
-		//TODO: show levelboard in real time when we select level in SpawnTree
 		case TTDM_Dead:
 			if ( PRI != None && !PRI.bStopGlobal ) GlobalTimer.grp.AlphaTo(1, 0.5, ANIM_EASE_IN);
 			LevelTimer.grp.AlphaTo(0, 0.3, ANIM_EASE_OUT);
@@ -361,7 +420,7 @@ event PostRender()
 
 	if ( Root == None )
 		CreateElements(Canvas);
-	if ( Root != None )
+	if ( Root != None && !bHide )
 	{
 		if ( bUpdateGlobalboard )
 			UpdateGlobalboard();
@@ -387,6 +446,17 @@ exec function RemoveCustomSpawn()
 		TTPRI(PlayerOwner.PlayerReplicationInfo).ServerRemoveCustomSpawn();
 }
 
+exec function ToggleHUDTrials()
+{
+	bHide = !bHide;
+}
+
+exec function ToggleBoards()
+{
+	if ( CurrentDisplayMode != TTDM_Dead )
+		SetDisplayMode(CurrentDisplayMode == TTDM_Timers ? TTDM_Boards : TTDM_Timers);
+}
+
 
 static function String FormatTrialTime(int Millis)
 {
@@ -405,4 +475,5 @@ defaultproperties
 {
 	HUDClass=class'TTHudMovie'
 	ScoreBoardClass=class'TTScoreboard'
+	MusicManagerClass=class'TTMusicManager'
 }

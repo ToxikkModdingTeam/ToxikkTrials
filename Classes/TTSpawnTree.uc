@@ -29,7 +29,6 @@ var array<GUIGroup> Columns;
 //==== Style ====
 CONST PAD_X = 16;
 CONST PAD_Y = 12;
-CONST TOP_SPACING = 24;
 CONST NODE_SPACING = 44;
 CONST ROW_HEIGHT = 64;
 var const Color COLOR_SELECTED, COLOR_LOCKED;
@@ -49,11 +48,10 @@ function Initialized()
 function bool BuildSpawnTree(Canvas C)
 {
 	local TTGRI GRI;
-	local GUILabel Title;
+	local GUILabel lbl;
 	local int Row, i, bottom, x;
-	local Vector2D s;
 
-	`Log("[D] BUILD SPAWN TREE");
+	//`Log("[D] BUILD SPAWN TREE");
 
 	GRI = TTGRI(PC.WorldInfo.GRI);
 	PRI = TTPRI(PC.PlayerReplicationInfo);
@@ -69,17 +67,34 @@ function bool BuildSpawnTree(Canvas C)
 	Panel.SetColors(class'GUIBoard'.default.BgColor.Val, Panel.TRANSPARENT);
 	Panel.OnDraw = OnDrawPanelBackground;
 
-	Title = class'GUILabel'.static.CreateLabel(Panel, "- SPAWN TREE -");
-	Title.SetPosAuto("center-x:50%; width:100%; top:" $ PAD_Y);
-	Title.SetTextAlign(ALIGN_CENTER, ALIGN_TOP);
-	Title.SetTextColor(class'GUIBoard'.default.TitleColor);
+	TREE_Y = PAD_Y;
 
-	s = Title.GetIntrinsicSize(C);
-	TREE_Y = Title.offY.Val + s.Y + TOP_SPACING;
+	lbl = class'GUILabel'.static.CreateLabel(Panel, "- SPAWN TREE -");
+	lbl.SetPosAuto("center-x:50%; width:100%; top:" $ TREE_Y);
+	lbl.SetTextAlign(ALIGN_CENTER, ALIGN_TOP);
+	lbl.SetTextColor(class'GUIBoard'.default.TitleColor);
+	//`Log("[D] " $ lbl.GetIntrinsicSize(C).X); // 110
+
+	TREE_Y += lbl.GetIntrinsicSize(C).Y + 8;
+
+	lbl = class'GUILabel'.static.CreateLabel(Panel, "- Right click to pick spawn point");
+	lbl.SetPosAuto("left:" $ PAD_X $ "; width:100%; top:" $ TREE_Y);
+	lbl.SetTextAlign(ALIGN_LEFT, ALIGN_TOP);
+	lbl.SetTextColor(MakeColor(255,255,255,160));
+	//`Log("[D] " $ lbl.GetIntrinsicSize(C).X); // 214
+
+	TREE_Y += lbl.GetIntrinsicSize(C).Y + 4;
+
+	lbl = class'GUILabel'.static.CreateLabel(Panel, "- Select twice to lock (red)");
+	lbl.SetPosAuto("left:" $ PAD_X $ "; width:100%; top:" $ TREE_Y);
+	lbl.SetTextAlign(ALIGN_LEFT, ALIGN_TOP);
+	lbl.SetTextColor(MakeColor(255,255,255,160));
+	//`Log("[D] " $ lbl.GetIntrinsicSize(C).X); // 183
+
+	TREE_Y += lbl.GetIntrinsicSize(C).Y + 16;
 
 	Row = 0;
 	BuildTreeNodes(C, INDEX_NONE, GRI.PointZero, 0, Row);
-	UpdateButtons();
 
 	bottom = TREE_Y;
 	for ( i=0; i<Nodes.Length; i++ )
@@ -97,9 +112,10 @@ function bool BuildSpawnTree(Canvas C)
 		x += Columns[i].offW.Val;
 	}
 
-	Panel.SetPosAuto("width:" $ Max(x+PAD_X, s.X+2*PAD_X) $ "; height:" $ (bottom + PAD_Y));
+	Panel.SetPosAuto("width:" $ Max(x+PAD_X, 214+2*PAD_X) $ "; height:" $ (bottom + PAD_Y));
 
 	bRebuild = false;
+	UpdateButtons();
 	return true;
 }
 
@@ -109,7 +125,7 @@ function BuildTreeNodes(Canvas C, int ParentIdx, TTWaypoint Cur, int Depth, out 
 	local TTPointZero PZ;
 	local int i, j;
 
-	`Log("[D] At point " $ Cur.Name);
+	//`Log("[D] At point " $ Cur.Name);
 
 	Sp = TTSavepoint(Cur);
 	if ( Sp != None && !Sp.IsA('TTObjective') )
@@ -194,7 +210,7 @@ function UpdateButtons()
 {
 	local int i;
 
-	if ( Nodes.Length == 0 )	// filter out first call in Show() before SpawnTree is created
+	if ( Nodes.Length == 0 || bRebuild )	// filter out first call in Show() before SpawnTree is created
 		return;
 
 	// uglyfix: When PointZero.InitialPoint is skipped in the SpawnTree but selected automatically, we need to reselect PZ!
@@ -236,6 +252,15 @@ function OnSelectNode(GUIButton elem)
 	{
 		PRI.bLockedSpawnPoint = false;
 		PRI.SpawnPoint = Nodes[i].Savepoint;
+
+		// Show corresponding level board
+		if ( TTLevel(PRI.SpawnPoint) != None )
+			PRI.CurrentLevel = TTLevel(PRI.SpawnPoint);
+		else if ( TTPointZero(PRI.SpawnPoint) != None && PRI.SpawnPoint.NextPoints.Length > 0 && TTLevel(PRI.SpawnPoint.NextPoints[0]) != None )
+			PRI.CurrentLevel = TTLevel(PRI.SpawnPoint.NextPoints[0]);
+		else
+			PRI.CurrentLevel = None;
+		TTHud(PC.myHUD).UpdateLevelboard();
 	}
 	UpdateButtons();
 }

@@ -10,7 +10,7 @@ class TTPointZero extends TTSavepoint
 	placeable
 	hidecategories(Savepoint,Checkpoint,Waypoint,HUD,Trigger,Collision);
 
-/** Either a TTLevel or a TTSavepoint, depending on whether map starts starts in a level */
+/** Either a TTLevelInitial or a TTSpawnInitial, depending on whether map starts starts in a level or not */
 var(PointZero) TTSavepoint InitialPoint;
 
 var(Savepoint) String SingleSpawnTreeLabel;

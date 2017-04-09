@@ -10,6 +10,12 @@ class TTWeap_CSpawner extends CRZWeap_PistolAW29;
 var float PlaceSpawnTime;
 var float RemoveSpawnTime;
 
+var Vector2D ProgressSize;
+var Color ProgressCol[2];
+var GUIGroup ProgressBox;
+var GUIGroup ProgressLoad;
+var bool bProgressVisible;
+
 simulated function CustomFire()
 {
 	// Start timer on both server and client
@@ -78,6 +84,8 @@ simulated function FireTimer()
 			TTPRI(Instigator.PlayerReplicationInfo).ServerPlaceCustomSpawn();
 		else
 			TTPRI(Instigator.PlayerReplicationInfo).ServerRemoveCustomSpawn();
+		if ( ProgressLoad != None )
+			ProgressLoad.MoveToAuto("width:100%", 0.1, ANIM_EASE_IN);
 	}
 }
 
@@ -99,6 +107,61 @@ function byte BestMode()
     return 1;	// prevent bots from doing silly stuff
 }
 
+// HUD Progressbar
+simulated function DrawWeaponCrosshair(Hud HUD)
+{
+	local TTHud H;
+	local float pct;
+
+	H = TTHud(HUD);
+	if ( H == None )
+		return;
+
+	if ( ProgressBox == None )
+	{
+		ProgressBox = class'GUIGroup'.static.CreateGroup(H.Root);
+		ProgressBox.SetPosAuto("center-x:50%; top:50%+64; width:"$ProgressSize.X$"; height:"$ProgressSize.Y);
+		ProgressBox.SetColors(MakeColor(0,0,0,128), MakeColor(255,255,255,255));
+		ProgressBox.SetAlpha(0.0);
+
+		ProgressLoad = class'GUIGroup'.static.CreateGroup(ProgressBox);
+		ProgressLoad.SetPosAuto("left:1; top:1; width:100%-2; height:100%-2");
+	}
+
+	if ( IsTimerActive('FireTimer') && !WorldInfo.GRI.bMatchIsOver )
+	{
+		if ( !bProgressVisible )
+		{
+			ProgressLoad.SetPosAuto("width:0");
+			ProgressBox.AlphaTo(1.0, 0.3, ANIM_EASE_IN);
+			bProgressVisible = true;
+		}
+
+		ProgressLoad.SetColors(ProgressCol[CurrentFireMode], ProgressLoad.TRANSPARENT);
+
+		pct = 1.0 - GetRemainingTimeForTimer('FireTimer') / (CurrentFireMode == 0 ? PlaceSpawnTime : RemoveSpawnTime);
+
+		ProgressLoad.MoveToAuto("width:" $ (100.0*pct) $ "%", 0.1, ANIM_EASE_IN);
+	}
+	else if ( bProgressVisible )
+	{
+		ProgressBox.AlphaTo(0.0, 0.3, ANIM_EASE_OUT);
+		bProgressVisible = false;
+	}
+}
+
+simulated event Destroyed()
+{
+	if ( ProgressBox != None )
+	{
+		ProgressBox.RemoveFromParent();
+		ProgressBox = None;
+	}
+	Super.Destroyed();
+}
+
+
+// Weapon name
 static function InitWeaponHudElements(CRZHud HUD)
 {
 	Super.InitWeaponHudElements(HUD);
@@ -109,8 +172,14 @@ static function InitWeaponHudElements(CRZHud HUD)
 
 defaultproperties
 {
-	PlaceSpawnTime=1.0
-	RemoveSpawnTime=1.5
+	PlaceSpawnTime=0.8
+	RemoveSpawnTime=1.4
+
+	ProgressSize=(X=200,Y=34)
+	ProgressCol(0)=(R=32,G=220,B=32,A=220)
+	ProgressCol(1)=(R=255,G=0,B=0,A=220)
+
+	bLoaded=true
 
 	WeaponFireTypes(0)=EWFT_Custom
 	WeaponFireTypes(1)=EWFT_Custom

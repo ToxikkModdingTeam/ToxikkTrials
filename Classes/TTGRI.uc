@@ -60,6 +60,14 @@ struct sLevelboard
 /** Server Replicated - Levels boards */
 var RepNotify sLevelboard Levelboard[MAX_LEVELBOARDS];
 
+/** Server - Centralize storage of custom modified weaponfiring sound cues */
+struct sCustomFiringCue
+{
+	var SoundCue Org;
+	var SoundCue Custom;
+};
+var array<sCustomFiringCue> CustomFiringCues;
+
 
 Replication
 {
@@ -68,6 +76,7 @@ Replication
 	if ( bNetInitial || bNetDirty )
 		Leaderboard, Globalboard, Levelboard;
 }
+
 
 simulated function PostBeginPlay()
 {
@@ -177,6 +186,23 @@ function CheckReachability()
 			`Log("[Trials] WARNING - Waypoint has no successors : " $ AllPoints[i].Name);
 	}
 }
+
+
+function SoundCue GetCustomFiringCue(UTWeapon Weap, SoundCue Org)
+{
+	local int i;
+	i = CustomFiringCues.Find('Org', Org);
+	if ( i == INDEX_NONE )
+	{
+		i = CustomFiringCues.Length;
+		CustomFiringCues.Length = i+1;
+		CustomFiringCues[i].Org = Org;
+		CustomFiringCues[i].Custom = new(Weap) class'SoundCue'(Org);
+		CustomFiringCues[i].Custom.SoundClass = 'WeaponEnemy';
+	}
+	return CustomFiringCues[i].Custom;
+}
+
 
 /** This is really bullshit... */
 simulated function WaitForLocalPC()
